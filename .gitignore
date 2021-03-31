@@ -32,10 +32,11 @@
 *.out
 *.app
 
-# VS Code / clangd
+# VS Code / clangd / clang
 .vscode/
 compile_commands.json
 .cache/
+*.dSYM/
 
 # Mac
 .DS_Store
