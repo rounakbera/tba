@@ -7,9 +7,10 @@
 *.o
 *.obj
 
-# Precompiled Headers
+# Precompiled Headers/Modules
 *.gch
 *.pch
+*.pcm
 
 # Compiled Dynamic libraries
 *.so
@@ -30,3 +31,11 @@
 *.exe
 *.out
 *.app
+
+# VS Code / clangd
+.vscode/
+compile_commands.json
+.cache/
+
+# Mac
+.DS_Store
