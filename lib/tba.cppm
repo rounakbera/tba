@@ -14,26 +14,63 @@ import <chrono>;
 import <iostream>;
 import <vector>;
 import <concepts>;
+import <unordered_map>;
+import <functional>;
+import <variant>;
 
 export namespace tba {
-    enum class Format {json};
-
+    // concept definitions
     template<typename T>
     concept GameTalker = requires(T t) {
         { t.history } -> std::same_as<std::vector<std::string>>;
         { t.getInput() } -> std::same_as<std::vector<std::string>>;
     };
 
-    template <GameTalker T, typename S>
+    template<typename S>
+    concept GameState = requires(S s, std::string d) {
+        { s.gameEnd } -> std::same_as<bool>;
+    };
+
+    // class definitions
+    enum class Format {json};
+
+    template <GameState S> class Event;
+    template <GameState S> class Action;
+    template <GameState S> class Room;
+
+    template <GameState S>
+    class Event {
+    public:
+        std::function<std::pair<bool, std::string>(Room<S>, S&)> run;
+    };
+
+    template <GameState S>
+    class Action {
+    public:
+        std::function<std::pair<bool, std::string>(Room<S>, S&, std::vector<std::string>)> run;
+    };
+
+    template <GameState S>
+    class Room {
+    public:
+        std::unordered_map<std::string, Room<S>> connections;
+        std::unordered_map<std::string, Event<S>> events;
+        std::unordered_map<std::string, Action<S>> actions;
+    };
+
+    template <GameTalker T, GameState S>
     class GameRunner {
     public:
         T talker;
         S state;
+        Room<S> currentRoom;
         Format saveFormat;
 
         void runGame();
         std::string tryAction(std::vector<std::string> args);
         void checkEvents();
+        void setStartingRoom(Room<S> room);
+        void goNextRoom(std::string direction);
         std::pair<bool, std::chrono::microseconds> saveGame(Format format);
         std::pair<bool, std::chrono::microseconds> loadGame(Format format);
     };
@@ -46,23 +83,14 @@ export namespace tba {
     };
     
     class DefaultGameState {
-        
+    public:
+        std::unordered_map<std::string, std::variant<bool, int, std::string>> flags;
+        bool gameEnd;
     };
 
-    class Room {
-
-    };
-
-    class Event {
-
-    };
-
-    class Action {
-
-    };
-
-    template <GameTalker T, typename S>
-    void tba::GameRunner<T, S>::runGame()
+    // GameRunner method definitions
+    template <GameTalker T, GameState S>
+    void GameRunner<T, S>::runGame()
     {
         std::cout << "Hello world!\n";
     }

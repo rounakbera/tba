@@ -1,7 +1,9 @@
 import tba;
 import <iostream>;
 import <vector>;
-import <sstream>;
+// clang modules are a bit buggy; may need to import some extra standard library modules
+import <variant>;
+import <unordered_map>;
 
 class MyGameTalker {
 public:
@@ -16,11 +18,7 @@ std::vector<std::string> MyGameTalker::getInput()
     std::string input;
     std::cin >> input;
 
-    // tokenize input by whitespace
-    std::istringstream iss(input);
-    std::vector<std::string> args{std::istream_iterator<std::string>{iss},
-                    std::istream_iterator<std::string>{}};
-
+    std::vector<std::string> args {input};
     return args;
 }
 
@@ -30,7 +28,7 @@ int main()
     gameRunner.runGame();
     gameRunner.talker.getInput();
 
-    tba::GameRunner<MyGameTalker, int> myGameRunner;
+    tba::GameRunner<MyGameTalker, tba::DefaultGameState> myGameRunner;
     myGameRunner.runGame();
     myGameRunner.talker.getInput();
 }
