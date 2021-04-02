@@ -4,7 +4,7 @@ CXX = clang-11 --driver-mode=g++
 INCLUDES = -I ../lib
 
 CFLAGS   = -g -Wall $(INCLUDES)
-CXXFLAGS = -g -Wall $(INCLUDES) -std=c++20 -fmodules -fprebuilt-module-path=.. -fmodule-file=$(MODULE)
+CXXFLAGS = -g -Wall $(INCLUDES) -std=c++20 -O2 -fmodules -fprebuilt-module-path=.. -fmodule-file=$(MODULE)
 
 LDFLAGS = -g -L ../lib
 LDLIBS  = -ltba
