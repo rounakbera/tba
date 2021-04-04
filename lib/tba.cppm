@@ -41,13 +41,13 @@ export namespace tba {
     template <GameState S>
     class Event {
     public:
-        std::function<std::pair<bool, std::string>(Room<S>, S&)> run;
+        std::function<std::pair<bool, std::string>(Room<S>&, S&)> run;
     };
 
     template <GameState S>
     class Action {
     public:
-        std::function<std::pair<bool, std::string>(Room<S>, S&, std::vector<std::string>)> run;
+        std::function<std::pair<bool, std::string>(Room<S>&, S&, std::vector<std::string>)> run;
     };
 
     template <GameState S>
