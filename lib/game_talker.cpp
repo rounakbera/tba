@@ -4,11 +4,12 @@ import <iostream>;
 import <vector>;
 import <sstream>;
 import <algorithm>;
+import <string>;
 
 std::vector<std::string> tba::DefaultGameTalker::getInput()
 {
     std::string input;
-    std::cin >> input;
+    std::getline(std::cin, input);
 
     // tokenize input by whitespace
     std::istringstream iss(input);

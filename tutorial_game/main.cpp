@@ -25,6 +25,8 @@ std::vector<std::string> MyGameTalker::getInput()
 
 int main()
 {
+    std::ios_base::sync_with_stdio(false); // iostream optimization
+
     tba::GameRunner<tba::DefaultGameTalker, tba::DefaultGameState> gameRunner;
     gameRunner.runGame();
     gameRunner.talker.getInput();

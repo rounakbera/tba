@@ -17,6 +17,7 @@ import <concepts>;
 import <unordered_map>;
 import <functional>;
 import <variant>;
+import <cstdlib>;
 
 export namespace tba {
     // concept definitions
@@ -93,5 +94,52 @@ export namespace tba {
     void GameRunner<T, S>::runGame()
     {
         std::cout << "Hello world!\n";
+        while (true) {
+            std::vector<std::string> args = talker.getInput();
+            std::string output = tryAction(args);
+            std::cout << output << "\n";
+        }
+    }
+
+    template <GameTalker T, GameState S>
+    std::string GameRunner<T, S>::tryAction(std::vector<std::string> args)
+    {
+        std::string actionName = args[0];
+        args.erase(args.begin()); // remove action from args
+
+        // check for quit game
+        if (actionName == "quit" && args.size() == 0) {
+            exit(0);
+        }
+
+        // check for and validate go action
+        if (actionName == "go" && (args.size() != 1 || !currentRoom.connections.contains(args[0]))) {
+            return "Room not found!";
+        }
+
+        // search and run room actions
+        auto actionIt = currentRoom.actions.find(actionName);
+        std::string actionOutput = "";
+        if (actionIt != currentRoom.actions.end()) {
+            auto [success, output] = actionIt->second.run(currentRoom, state, args);
+            if (success) {
+                actionOutput = output;
+                
+            }
+            else {
+                actionOutput = "Action failed: " + output;
+            }
+        }
+        else if (actionName != "go") {
+            // action is not a room action or a go action
+            actionOutput = "Invalid action!";
+        }
+        else {
+            // run a valid go action
+            // TODO: uncomment below when goNextRoom is implemented
+            // goNextRoom(args[1]);
+            actionOutput = "Moved " + args[1] + ": " + actionOutput;
+        }
+        return actionOutput;
     }
 }
