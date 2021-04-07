@@ -185,15 +185,14 @@ export namespace tba {
     template <GameTalker T, GameState S>
     void GameRunner<T, S>::runGame()
     {
-        std::cout << "Starting game...\n";
+        std::cout << "Starting game...\n\n";
         checkEvents();
         while (true) {
             std::cout << "\nCurrently available actions:\n";
             for (const auto& [key, action] : currentRoom.actions) {
                 std::cout << key << "\n";
             }
-            std::cout << "save\n";
-            std::cout << "quit\n";
+            std::cout << "save\nquit\n\n";
 
             std::vector<std::string> args = talker.getInput();
             std::string output = tryAction(args);
