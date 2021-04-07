@@ -192,7 +192,7 @@ export namespace tba {
             for (const auto& [key, action] : currentRoom.actions) {
                 std::cout << key << "\n";
             }
-            std::cout << "save\nquit\n\n";
+            std::cout << "go\nsave\nquit\n\n";
 
             std::vector<std::string> args = talker.getInput();
             std::string output = tryAction(args);
