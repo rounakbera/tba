@@ -217,6 +217,10 @@ export namespace tba {
 
         // check for and validate go action
         if (actionName == "go" && (args.size() != 1 || !currentRoom.connections.contains(args[0]))) {
+            std::cout << "\nCurrently available directions:\n";
+            for (const auto& [key, action] : currentRoom.connections) {
+                std::cout << key << "\n";
+            }
             return "Location not found!";
         }
 
