@@ -18,6 +18,7 @@ import <unordered_map>;
 import <functional>;
 import <variant>;
 import <cstdlib>;
+import <algorithm>;
 
 export namespace tba {
     // concept definitions
@@ -32,31 +33,57 @@ export namespace tba {
         { s.gameEnd } -> std::same_as<bool>;
     };
 
-    // class definitions
-    enum class Format {json};
-
+    // class forward declarations
     template <GameState S> class Event;
     template <GameState S> class Action;
     template <GameState S> class Room;
 
+    // type definitions
+    template<GameState S>
+    using EventFunc = std::function<std::pair<bool, std::string>(Room<S>&, S&)>;
+
+    template<GameState S>
+    using ActionFunc = std::function<std::pair<bool, std::string>(Room<S>&, S&, std::vector<std::string>)>;
+
+    // class definitions
+    enum class Format {json};
+
     template <GameState S>
     class Event {
     public:
-        std::function<std::pair<bool, std::string>(Room<S>&, S&)> run;
+        EventFunc<S> run;
+
+        Event(EventFunc<S> eventFunc);
     };
 
     template <GameState S>
     class Action {
     public:
-        std::function<std::pair<bool, std::string>(Room<S>&, S&, std::vector<std::string>)> run;
+        ActionFunc<S> run;
+
+        Action(ActionFunc<S> actionFunc);
+    };
+
+    // basic implementation of an ordered hash table
+    template <GameState S>
+    class EventMap {
+    public:
+        std::unordered_map<std::string, Event<S>> map;
+        std::vector<std::string> order;
+
+        bool add(std::string key, Event<S> event);
+        bool emplace(std::string key, Event<S> event);
+        bool erase(std::string key);
     };
 
     template <GameState S>
     class Room {
     public:
         std::unordered_map<std::string, Room<S>> connections;
-        std::unordered_map<std::string, Event<S>> events;
+        EventMap<S> events;
         std::unordered_map<std::string, Action<S>> actions;
+
+        bool setDescription(std::string description, std::string name="description", bool replace=true);
     };
 
     template <GameTalker T, GameState S>
@@ -89,15 +116,92 @@ export namespace tba {
         bool gameEnd;
     };
 
-    // GameRunner method definitions
+    // Implementation begins here:
+
+    // Event member function definitions
+    template <GameState S>
+    Event<S>::Event(EventFunc<S> eventFunc)
+    {
+        run = eventFunc;
+    }
+
+    // Action member function definitions
+    template <GameState S>
+    Action<S>::Action(ActionFunc<S> actionFunc)
+    {
+        run = actionFunc;
+    }
+
+    // EventMap member function defintions
+    template <GameState S>
+    bool EventMap<S>::add(std::string key, Event<S> event)
+    {
+        bool isNew = map.insert_or_assign(key, event).second;
+        if (isNew) {
+            order.emplace_back(key);
+        }
+        return isNew;
+    }
+
+    template <GameState S>
+    bool EventMap<S>::emplace(std::string key, Event<S> event)
+    {
+        bool success = map.emplace(key, event).second;
+        if (success) {
+            order.emplace_back(key);
+        }
+        return success;
+    }
+
+    template <GameState S>
+    bool EventMap<S>::erase(std::string key)
+    {
+        if (map.erase(key) == 0) {
+            return false;
+        }
+        order.erase(std::remove(order.begin(), order.end(), key), order.end());
+        return true;
+    }
+
+    // Room member function definitions
+    // setDescription creates an Event which prints the specified description string
+    // returns true if successfully add Event to events
+    template<GameState S>
+    bool Room<S>::setDescription(std::string description, std::string name, bool replace)
+    {
+        EventFunc<S> descriptionEvent = [=](Room<S>&, S&) {
+            return std::make_pair(true, description);
+        };
+        if (replace) {
+            events.add("description", Event{descriptionEvent});
+            return true;
+        }
+        else {
+            return events.emplace("description", Event{descriptionEvent});
+        }
+    }
+
+    // GameRunner member function definitions
     template <GameTalker T, GameState S>
     void GameRunner<T, S>::runGame()
     {
-        std::cout << "Hello world!\n";
+        std::cout << "Starting game...\n";
+        checkEvents();
         while (true) {
+            std::cout << "\nCurrently available actions:\n";
+            for (const auto& [key, action] : currentRoom.actions) {
+                std::cout << key << "\n";
+            }
+            std::cout << "save\n";
+            std::cout << "quit\n";
+
             std::vector<std::string> args = talker.getInput();
             std::string output = tryAction(args);
-            std::cout << output << "\n";
+            std::cout << "\n-----\n" << output << "\n\n";
+
+            if (output == "Quitting now...") {
+                return;
+            }
         }
     }
 
@@ -109,12 +213,12 @@ export namespace tba {
 
         // check for quit game
         if (actionName == "quit" && args.size() == 0) {
-            exit(0);
+            return "Quitting now...";
         }
 
         // check for and validate go action
         if (actionName == "go" && (args.size() != 1 || !currentRoom.connections.contains(args[0]))) {
-            return "Room not found!";
+            return "Location not found!";
         }
 
         // search and run room actions
@@ -139,7 +243,25 @@ export namespace tba {
             // TODO: uncomment below when goNextRoom is implemented
             // goNextRoom(args[1]);
             actionOutput = "Moved " + args[1] + ": " + actionOutput;
+            checkEvents();
         }
         return actionOutput;
+    }
+
+    template <GameTalker T, GameState S>
+    void GameRunner<T, S>::checkEvents()
+    {
+        for (const auto& key : currentRoom.events.order) {
+            auto eventIt = currentRoom.events.map.find(key);
+            if (eventIt != currentRoom.events.map.end()) {
+                auto [success, output] = eventIt->second.run(currentRoom, state);
+                if (success) {
+                    std::cout << output << "\n";
+                }
+            }
+            else {
+                std::cout << "internal error: could not find event\n";
+            }
+        }
     }
 }
