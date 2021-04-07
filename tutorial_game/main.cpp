@@ -49,6 +49,11 @@ int main()
             return std::make_pair(true, "Who do you want to greet?");
         }
         else if (args[0] == "man") {
+            tba::ActionFunc<tba::DefaultGameState> nodAction =
+                [](auto& r, auto& s, std::vector<std::string> args) {
+                    return std::make_pair(true, "You nod. \"I knew it would happen eventually,\" he chuckles.");
+                };
+            r.actions.emplace("nod", nodAction);
             return std::make_pair(true, "The man looks up and smiles at you. \"Bored yet?\"");
         }
         else if (args[0] == "woman") {
