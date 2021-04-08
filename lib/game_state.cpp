@@ -12,10 +12,24 @@ void tba::DefaultGameState::serializeJson(std::ostream& out)
 
     for (auto const&p : flags) 
     {
-        out << p.first << ": " << std::get<0>(p.second) << ", ";
+        if (std::holds_alternative<bool>(p.second)) 
+        {
+            auto val = std::get<bool>(p.second);
+            out << p.first << ": " << val << ", ";
+        } 
+        else if (std::holds_alternative<int>(p.second)) 
+        {
+            auto val = std::get<int>(p.second);
+            out << p.first << ": " << val << ", ";
+        } 
+        else if (std::holds_alternative<std::string>(p.second)) 
+        {
+            auto val = std::get<std::string>(p.second);
+            out << p.first << ": " << val << ", ";
+        }
     }
 
-    out << " }, gameEnd: " << gameEnd << " ,";
+    out << "}, gameEnd: " << gameEnd << ", ";
     out << "currentRoom: " << currentRoom << " }";
 }
 

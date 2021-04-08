@@ -32,6 +32,10 @@ int main()
 
     tba::GameRunner<tba::DefaultGameTalker, tba::DefaultGameState> gameRunner {};
     gameRunner.setSaveFormat("json");
+    gameRunner.state.flags.insert(std::make_pair("testInt", 12));
+    gameRunner.state.flags.insert(std::make_pair("testBool", true));
+    gameRunner.state.flags.insert(std::make_pair("testString", "testing"));
+
     /*gameRunner.addStartingRoom("start");
     gameRunner.runGame();
     std::cout << "Game has quit\n";*/
