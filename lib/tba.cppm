@@ -20,6 +20,7 @@ import <variant>;
 import <algorithm>;
 import <stdexcept>;
 import <sstream>;
+import <fstream>;
 
 export namespace tba {
     // concept definitions
@@ -30,11 +31,11 @@ export namespace tba {
     };
 
     template<typename S>
-    concept GameState = requires(S s, std::string format, std::ostream& myStream) {
+    concept GameState = requires(S s, std::string format, std::ostream& myOStream, std::istream& myIStream) {
         { s.gameEnd } -> std::same_as<bool>;
         { s.currentRoom } -> std::same_as<std::string>;
-        s.serialize(myStream, format);
-        //s.deserialize(format);
+        s.serialize(myOStream, format); // TODO: how to enforce the return is void
+        //s.deserialize(myIStream, format); // TODO: returns a GameState, is this possible?
     };
 
     // class forward declarations
@@ -130,9 +131,10 @@ export namespace tba {
         bool gameEnd;
         RoomName currentRoom;
 
-        void serialize(std::ostream& mystream, std::string format);
-        //bool deserialize(std::string format);
+        void serialize(std::ostream& myOStream, std::string format);
+        //DefaultGameState* deserialize(std::istream& myIStream, std::string format);
         void serializeJson(std::ostream& out);
+        // DefaultGameState* deserializeJson(std::istream& in);
     };
 
     // Implementation begins here:
@@ -397,12 +399,15 @@ export namespace tba {
     std::pair<bool, std::chrono::microseconds> GameRunner<T, S>::saveGame()
     {
         std::stringbuf myBuf;
-        std::ostream myStream(&myBuf);
+        std::ostream myOStream(&myBuf);
 
         auto start = std::chrono::high_resolution_clock::now();
 
-        state.serialize(myStream, saveFormat);
-        std::cout << myBuf.str() <<std::endl;
+        state.serialize(myOStream, saveFormat);
+        std::ofstream outfile("output.txt");
+        outfile << myBuf.str();
+        outfile.close();
+        //std::cout << myBuf.str() <<std::endl;
 
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
@@ -415,8 +420,13 @@ export namespace tba {
     template <GameTalker T, GameState S>
     std::pair<bool, std::chrono::microseconds> GameRunner<T, S>::loadGame()
     {
+        std::stringbuf myBuf;
+        std::istream myIStream(&myBuf);
+
         auto start = std::chrono::high_resolution_clock::now();
-        //auto data = state.deserialize(saveFormat);
+
+        //state = state.deserialize(myIStream, saveFormat);
+
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         

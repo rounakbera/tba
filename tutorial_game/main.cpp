@@ -6,6 +6,7 @@ import <utility>;
 import <unordered_map>;
 import <string>;
 import <sstream>;
+import <fstream>;
 // clang modules are a bit buggy; may need to import some extra standard library modules
 import <variant>;
 
