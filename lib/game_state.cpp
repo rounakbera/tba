@@ -3,12 +3,32 @@ module tba;
 import <vector>;
 import <string>;
 
-bool tba::DefaultGameState::save(std::string format)
+void tba::DefaultGameState::serialize(std::ostream& out, std::string format) 
 {
-    return true;
+    if (format == "json") {
+        saveJson();
+    } else if (format == "binary") {
+        saveSerial();
+    }
+    else return;
 }
 
-bool tba::DefaultGameState::load(std::string format)
+void tba::DefaultGameState::deserialize(std::string format)
 {
-    return true;
+    if (format == "json") {
+        loadJson();
+    } else if (format == "binary") {
+        loadSerial();
+    }
+    else return;
+}
+
+bool tba::DefaultGameState::saveJson()
+{
+    return false
+}
+
+bool tba::DefaultGameState::saveBinary()
+{
+    
 }

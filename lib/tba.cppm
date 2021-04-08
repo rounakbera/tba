@@ -29,11 +29,11 @@ export namespace tba {
     };
 
     template<typename S>
-    concept GameState = requires(S s, std::string format) {
+    concept GameState = requires(S s, std::string format, std::iostream& io) {
         { s.gameEnd } -> std::same_as<bool>;
         { s.currentRoom } -> std::same_as<std::string>;
-        { s.save(format) } -> std::same_as<bool>;
-        { s.load(format) } -> std::same_as<bool>;
+        s.serialize(io, format);
+        //s.deserialize(format);
     };
 
     // class forward declarations
@@ -50,6 +50,7 @@ export namespace tba {
 
     using Direction = std::string;
     using RoomName = std::string;
+    using Format = std::string;
 
     // class definitions
 
@@ -98,8 +99,8 @@ export namespace tba {
     public:
         T talker;
         S state;
+        Format saveFormat;
         std::unordered_map<RoomName, Room<S>> rooms;
-        std::string format;
 
         void runGame();
         std::string tryAction(std::vector<std::string> args);
@@ -128,8 +129,8 @@ export namespace tba {
         bool gameEnd;
         RoomName currentRoom;
 
-        bool save(std::string format);
-        bool load(std::string format);
+        bool serialize(std::string format);
+        bool deserialize(std::string format);
     };
 
     // Implementation begins here:
@@ -265,12 +266,21 @@ export namespace tba {
             return "Quitting now...";
         }
         else if (actionName == "save") {
-            saveGame();
+            auto response = saveGame();
+            if (response.first){
+                return "Game saved; operation took " + std::to_string(response.second.count()) + " microseconds";
+            } else{
+                return "Failed to save game; operation took " + std::to_string(response.second.count()) + " microseconds";
+            }
         }
         else if (actionName == "load") {
-            loadGame();
+            auto response = loadGame();
+            if (response.first) {
+                return "Game loaded; operation took " + std::to_string(response.second.count()) + " microseconds";
+            } else {
+                return "Failed to load game; operation took " + std::to_string(response.second.count()) + " microseconds";
+            }
         }
-
         // check for and validate go action
         else if (actionName == "go" && (args.size() != 1 || !getCurrentRoom().connections.contains(args[0]))) {
             std::cout << "\nCurrently available directions:\n";
@@ -385,13 +395,14 @@ export namespace tba {
     std::pair<bool, std::chrono::microseconds> GameRunner<T, S>::saveGame()
     {
         std::pair<bool, std::chrono::microseconds> toReturn;
+        std::iostream 
 
         auto start = std::chrono::high_resolution_clock::now();
-        auto ok = S::save(format);
+        auto data = state.serialize(saveFormat);
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         
-        toReturn.first = ok;
+        toReturn.first = true;
         toReturn.second = duration;
 
         return toReturn;
@@ -403,11 +414,11 @@ export namespace tba {
         std::pair<bool, std::chrono::microseconds> toReturn;
 
         auto start = std::chrono::high_resolution_clock::now();
-        auto ok = S::load(format);
+        auto data = state.deserialize(saveFormat);
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         
-        toReturn.first = ok;
+        toReturn.first = true;
         toReturn.second = duration;
 
         return toReturn;
@@ -416,7 +427,7 @@ export namespace tba {
     template <GameTalker T, GameState S>
     void GameRunner<T, S>::setSaveFormat(std::string newFormat)
     {
-        format = newFormat;
+        saveFormat = newFormat;
     }
 
 }
