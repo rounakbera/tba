@@ -32,7 +32,7 @@ int main()
     std::ios_base::sync_with_stdio(false); // iostream optimization
 
     tba::GameRunner<tba::DefaultGameTalker, tba::DefaultGameState> gameRunner {};
-    gameRunner.setSaveState("binary", true);
+    gameRunner.setSaveState("simple", false);
     gameRunner.state.flags.insert(std::make_pair("testInt", 12));
     gameRunner.state.flags.insert(std::make_pair("testBool", true));
     gameRunner.state.flags.insert(std::make_pair("testString", "testing"));
