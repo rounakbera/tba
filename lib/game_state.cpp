@@ -22,7 +22,14 @@ bool tba::DefaultGameState::serializeSimple(std::ostream& out)
         if (std::holds_alternative<bool>(p.second)) 
         {
             auto val = std::get<bool>(p.second);
-            out << p.first << " : " << val << "\n";
+            if (val) 
+            {
+                out << p.first << " : true\n";
+            }
+            else
+            {
+                out << p.first << " : false\n";
+            }
         } 
         else if (std::holds_alternative<int>(p.second)) 
         {
@@ -32,7 +39,7 @@ bool tba::DefaultGameState::serializeSimple(std::ostream& out)
         else if (std::holds_alternative<std::string>(p.second)) 
         {
             auto val = std::get<std::string>(p.second);
-            out << p.first << " : " << val << "\n";
+            out << p.first << " : '" << val << "'\n";
         }
     }
     out << gameEnd << "\n";
@@ -52,12 +59,34 @@ bool tba::DefaultGameState::deserializeSimple(std::istream& in)
 
         std::string delimiter = " : ";
         auto key = flagEntry.substr(0, flagEntry.find(delimiter));
+
         flagEntry.erase(0, flagEntry.find(delimiter) + delimiter.length());
-        auto val = flagEntry.substr(0, flagEntry.find(delimiter));
+        switch (flagEntry.at(0))
+        {
+        case '\'': {
+            auto valStr = flagEntry.substr(1, flagEntry.size() - 1);
+            flags.insert(std::make_pair(key, valStr));
+            break;
+        }
+        
+        case 't': {
+            flags.insert(std::make_pair(key, true));
+            break;
+        }
 
-        std::cout << key << " : " << val << "\n";
+        case 'f': {
+            flags.insert(std::make_pair(key, false));
+            break;
+        }
 
-        flags.insert(std::make_pair(key, val));
+        default: {
+            auto valInt = std::stoi(flagEntry);
+            flags.insert(std::make_pair(key, valInt));
+        }
+        }
+
+        std::cout << key << "\n";
+
     }
 
     std::getline(in, line);
