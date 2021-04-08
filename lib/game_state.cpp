@@ -64,7 +64,7 @@ bool tba::DefaultGameState::deserializeSimple(std::istream& in)
         switch (flagEntry.at(0))
         {
         case '\'': {
-            auto valStr = flagEntry.substr(1, flagEntry.size() - 1);
+            auto valStr = flagEntry.substr(1, flagEntry.size() - 2);
             flags.insert(std::make_pair(key, valStr));
             break;
         }
@@ -85,7 +85,7 @@ bool tba::DefaultGameState::deserializeSimple(std::istream& in)
         }
         }
 
-        std::cout << key << "\n";
+        std::cout << flagEntry << "\n";
 
     }
 
