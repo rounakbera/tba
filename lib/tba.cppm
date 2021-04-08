@@ -422,7 +422,7 @@ export namespace tba {
     template <GameTalker T, GameState S>
     std::pair<bool, std::chrono::microseconds> GameRunner<T, S>::loadGame()
     {
-        // For testing the new state
+        // For verfying the new state
         std::stringbuf myBuf;
         std::ostream myOStream(&myBuf);
 
@@ -430,12 +430,11 @@ export namespace tba {
 
         std::ifstream infile("output.txt");
         state = *(state.deserialize(infile, saveFormat));
-
-        // for testing, read the new state
-        state.serialize(myOStream, saveFormat);
-        std::cout << myBuf.str();
-
         infile.close();
+
+        // for testing, read that new state was created correctly
+        // state.serialize(myOStream, saveFormat);
+        // std::cout << myBuf.str();
 
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
