@@ -125,6 +125,8 @@ export namespace tba {
         std::unordered_map<std::string, std::variant<bool, int, std::string>> flags;
         bool gameEnd;
         RoomName currentRoom;
+
+        std::pair<bool, std::chrono::microseconds> save();
     };
 
     // Implementation begins here:
@@ -353,4 +355,11 @@ export namespace tba {
             std::cout << "This place does not exist!\n";
         }
     }
+
+    template <GameTalker T, GameState S>
+    std::pair<bool, std::chrono::microseconds> GameRunner<T, S>::saveGame(Format format)
+    {
+        
+    }
+
 }
