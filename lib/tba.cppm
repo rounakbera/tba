@@ -116,6 +116,7 @@ export namespace tba {
 
         std::pair<bool, std::chrono::microseconds> saveGame();
         std::pair<bool, std::chrono::microseconds> loadGame();
+        void setSaveState(std::string formatName, bool binNeeded=false);
 
     private:
         std::ofstream getofstream(std::string filename);
@@ -457,4 +458,11 @@ export namespace tba {
             return std::ofstream(filename);
         }
     } 
+
+    template <GameTalker T, GameState S>
+    void GameRunner<T, S>::setSaveState(std::string formatName, bool binNeeded)
+    {
+        saveFormat = formatName;
+        binaryNeeded = binNeeded;
+    }
 }
