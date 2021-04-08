@@ -33,6 +33,7 @@
 *.app
 main
 output.txt
+savefile
 
 # VS Code / clangd / clang
 .vscode/

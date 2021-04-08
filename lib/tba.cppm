@@ -102,6 +102,7 @@ export namespace tba {
         T talker;
         S state;
         Format saveFormat;
+        bool binaryNeeded = false;
         std::unordered_map<RoomName, Room<S>> rooms;
 
         void runGame();
@@ -116,6 +117,10 @@ export namespace tba {
         std::pair<bool, std::chrono::microseconds> saveGame();
         std::pair<bool, std::chrono::microseconds> loadGame();
         void setSaveFormat(std::string newFormat);
+        void setBinaryNeeded(bool);
+
+    private:
+        std::ofstream getofstream(std::string filename);
     };
 
     class DefaultGameTalker {
@@ -404,7 +409,7 @@ export namespace tba {
     std::pair<bool, std::chrono::microseconds> GameRunner<T, S>::saveGame()
     {
         // std::stringbuf myBuf;
-        std::ofstream outfile("savefile");
+        auto outfile = getofstream("savefile");
 
         auto start = std::chrono::high_resolution_clock::now();
 
@@ -417,7 +422,7 @@ export namespace tba {
         }
 
         // // Serialize succeeded
-        // std::ofstream outfile("output.txt"); // TODO: different file name or user input
+        // std::std::ofstream outfile("output.txt"); // TODO: different file name or user input
         // outfile << myBuf.str();
         outfile.close();
 
@@ -448,4 +453,22 @@ export namespace tba {
         saveFormat = newFormat;
     }
 
+    template <GameTalker T, GameState S>
+    void GameRunner<T, S>::setBinaryNeeded(bool binaryVal)
+    {
+        binaryNeeded = binaryVal;
+    }
+
+    template <GameTalker T, GameState S>
+    std::ofstream GameRunner<T, S>::getofstream(std::string filename)
+    {
+        if (binaryNeeded)
+        {
+            return std::ofstream(filename, std::ios::binary);
+        }
+        else
+        {
+            return std::ofstream(filename);
+        }
+    } 
 }
