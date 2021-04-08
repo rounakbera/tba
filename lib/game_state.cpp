@@ -32,13 +32,11 @@ bool tba::DefaultGameState::serializeSimple(std::ostream& out)
     return true;
 }
 
-tba::DefaultGameState* tba::DefaultGameState::deserializeSimple(std::istream& in)
+bool tba::DefaultGameState::deserializeSimple(std::istream& in)
 {
-    tba::DefaultGameState *newGS = new tba::DefaultGameState();
-
+    flags.clear();
     std::string line;
     std::getline(in, line);
-
     for (int i=0; i<std::stoi(line); i++)
     {
         std::string flagEntry;
@@ -51,16 +49,16 @@ tba::DefaultGameState* tba::DefaultGameState::deserializeSimple(std::istream& in
 
         std::cout << key << " : " << val << std::endl;
 
-        newGS->flags.insert(std::make_pair(key, val));
+        flags.insert(std::make_pair(key, val));
     }
 
     std::getline(in, line);
-    newGS->gameEnd = stoi(line);
+    gameEnd = stoi(line);
 
     std::getline(in, line);
-    newGS->currentRoom = line;
+    currentRoom = line;
 
-    return newGS;
+    return true;
 }
 
 bool tba::DefaultGameState::serializeJson(std::ostream& out)
@@ -91,13 +89,13 @@ bool tba::DefaultGameState::serializeJson(std::ostream& out)
     return true;
 }
 
-tba::DefaultGameState* tba::DefaultGameState::deserializeJson(std::istream& in)
+bool tba::DefaultGameState::deserializeJson(std::istream& in)
 {
-    tba::DefaultGameState *newGS = new tba::DefaultGameState;
-    newGS->flags.insert(std::make_pair("newTest", 777));
-    newGS->currentRoom = "main hold";
-    newGS->gameEnd = false;
-    return newGS;
+    flags.clear();
+    flags.insert(std::make_pair("newTest", 777));
+    currentRoom = "main hold";
+    gameEnd = false;
+    return true;
 }
 
 bool tba::DefaultGameState::serialize(std::ostream& mystream, std::string format) 
@@ -113,7 +111,7 @@ bool tba::DefaultGameState::serialize(std::ostream& mystream, std::string format
     else return false;
 }
 
-tba::DefaultGameState* tba::DefaultGameState::deserialize(std::istream& in, std::string format)
+bool tba::DefaultGameState::deserialize(std::istream& in, std::string format)
 {
     if (format == "simple")
     {
@@ -123,5 +121,5 @@ tba::DefaultGameState* tba::DefaultGameState::deserialize(std::istream& in, std:
     {
         return deserializeJson(in);
     }
-    else return nullptr;
+    else return false;
 }

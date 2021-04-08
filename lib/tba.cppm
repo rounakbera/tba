@@ -35,7 +35,7 @@ export namespace tba {
         { s.gameEnd } -> std::same_as<bool>;
         { s.currentRoom } -> std::same_as<std::string>;
         { s.serialize(myOStream, format) } -> std::same_as<bool>;
-        s.deserialize(myIStream, format); // TODO: returns a GameState, is this possible?
+        { s.deserialize(myIStream, format) } -> std::same_as<bool>;
     };
 
     // class forward declarations
@@ -132,12 +132,12 @@ export namespace tba {
         RoomName currentRoom;
 
         bool serialize(std::ostream& myOStream, std::string format);
-        DefaultGameState* deserialize(std::istream& myIStream, std::string format);
+        bool deserialize(std::istream& myIStream, std::string format);
 
         bool serializeSimple(std::ostream& out);
-        DefaultGameState* deserializeSimple(std::istream& in);
+        bool deserializeSimple(std::istream& in);
         bool serializeJson(std::ostream& out);
-        DefaultGameState* deserializeJson(std::istream& in);
+        bool deserializeJson(std::istream& in);
     };
 
     // Implementation begins here:
@@ -434,23 +434,12 @@ export namespace tba {
         auto start = std::chrono::high_resolution_clock::now();
 
         std::ifstream infile("output.txt");
-        auto newStatePtr = state.deserialize(infile, saveFormat);
+        auto result = state.deserialize(infile, saveFormat);
         infile.close();
-
-        if (newStatePtr == nullptr) { // Something went wrong, let's return
-            auto end = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-            std::pair<bool, std::chrono::microseconds> toReturn {false, duration};
-            return toReturn;
-        }
-
-        // It went right
-        state = *newStatePtr;
 
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        
-        std::pair<bool, std::chrono::microseconds> toReturn {true, duration};
+        std::pair<bool, std::chrono::microseconds> toReturn {result, duration};
         return toReturn;
     }
 
