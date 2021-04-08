@@ -30,38 +30,55 @@ int main()
     std::ios_base::sync_with_stdio(false); // iostream optimization
 
     tba::GameRunner<tba::DefaultGameTalker, tba::DefaultGameState> gameRunner {};
-    /*gameRunner.runGame();
+    /*gameRunner.addStartingRoom("start");
+    gameRunner.runGame();
     std::cout << "Game has quit\n";*/
     
-    // test code for event/action
-    gameRunner.currentRoom.setDescription("You are sitting in a passenger chair in "
-            "a dingy space freighter. As you look out the viewport, you see the "
-            "bright starlines of hyperspace flow around you.");
+    // test code for event/action/room
+    tba::Room<tba::DefaultGameState> mainHold {};
+    mainHold.setDescription("You are sitting in a passenger "
+            "chair in a dingy space freighter. As you look out the viewport, "
+            "you see the bright starlines of hyperspace flow around you.");
     
     tba::EventFunc<tba::DefaultGameState> descriptionEvent = [](auto& r, auto& s) {
         return std::make_pair(true, "You look around and see two other people. "
             "One appears to be a man, and the other appears to be a woman.");
     };
-    gameRunner.currentRoom.events.emplace("description2", tba::Event{descriptionEvent});
+    mainHold.events.emplace("description2", tba::Event{descriptionEvent});
 
-    tba::ActionFunc<tba::DefaultGameState> talkAction = [](auto& r, auto& s, std::vector<std::string> args) {
-        if (args.size() == 0) {
-            return std::make_pair(true, "Who do you want to greet?");
-        }
-        else if (args[0] == "man") {
-            tba::ActionFunc<tba::DefaultGameState> nodAction =
-                [](auto& r, auto& s, std::vector<std::string> args) {
-                    return std::make_pair(true, "You nod. \"I knew it would happen eventually,\" he chuckles.");
-                };
-            r.actions.emplace("nod", nodAction);
-            return std::make_pair(true, "The man looks up and smiles at you. \"Bored yet?\"");
-        }
-        else if (args[0] == "woman") {
-            return std::make_pair(true, "The woman makes eye contact with you but does not respond.");
-        }
-        return std::make_pair(true, "You can't greet this!");
+    tba::ActionFunc<tba::DefaultGameState> talkAction =
+        [](auto& room, auto& state, std::vector<std::string> args) {
+            if (args.empty()) {
+                return std::make_pair(true, "Who do you want to greet?");
+            }
+            else if (args[0] == "man") {
+                tba::ActionFunc<tba::DefaultGameState> nodAction =
+                    [](auto& room, auto& state, std::vector<std::string> args) {
+                        room.actions.erase("nod");
+                        return std::make_pair(true, "You nod. \"I knew it would happen eventually,\" he chuckles.");
+                    };
+                room.actions.insert_or_assign("nod", tba::Action{nodAction});
+                return std::make_pair(true, "The man looks up and smiles at you. \"Bored yet?\"");
+            }
+            else if (args[0] == "woman") {
+                room.setTextAction("Who would you like to poke?", "poke", {{"woman", "The woman glares at you."}});
+                return std::make_pair(true, "The woman makes eye contact with you but does not respond.");
+            }
+            return std::make_pair(true, "You can't greet this!");
+        };
+    mainHold.actions.insert_or_assign("greet", tba::Action{talkAction});
+
+    std::unordered_map<std::string, std::string> holdGoTexts = {
+        {"up", "You climb up the ladder to the cockpit."}
     };
-    gameRunner.currentRoom.actions.insert_or_assign("greet", tba::Action{talkAction});
+    mainHold.setTextAction("", "go", holdGoTexts);
+
+    gameRunner.addStartingRoom("main hold", mainHold);
+
+    tba::Room<tba::DefaultGameState> cockpit {};
+    cockpit.setDescription("You enter the cockpit. The pilot is leaning back at his chair.");
+
+    gameRunner.addConnectingRoom("up", "cockpit", cockpit, "down");
 
     gameRunner.runGame();
 

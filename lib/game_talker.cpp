@@ -8,6 +8,7 @@ import <string>;
 
 std::vector<std::string> tba::DefaultGameTalker::getInput()
 {
+    std::cout << "> ";
     std::string input = "";
     while (input == "") {
         std::getline(std::cin, input);

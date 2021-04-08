@@ -17,8 +17,8 @@ import <concepts>;
 import <unordered_map>;
 import <functional>;
 import <variant>;
-import <cstdlib>;
 import <algorithm>;
+import <stdexcept>;
 
 export namespace tba {
     // concept definitions
@@ -31,6 +31,7 @@ export namespace tba {
     template<typename S>
     concept GameState = requires(S s, std::string d) {
         { s.gameEnd } -> std::same_as<bool>;
+        { s.currentRoom } -> std::same_as<std::string>;
     };
 
     // class forward declarations
@@ -44,6 +45,9 @@ export namespace tba {
 
     template<GameState S>
     using ActionFunc = std::function<std::pair<bool, std::string>(Room<S>&, S&, std::vector<std::string>)>;
+
+    using Direction = std::string;
+    using RoomName = std::string;
 
     // class definitions
     enum class Format {json};
@@ -79,11 +83,13 @@ export namespace tba {
     template <GameState S>
     class Room {
     public:
-        std::unordered_map<std::string, Room<S>> connections;
+        std::unordered_map<Direction, RoomName> connections;
         EventMap<S> events;
         std::unordered_map<std::string, Action<S>> actions;
 
         bool setDescription(std::string description, std::string name="description", bool replace=true);
+        bool setTextAction(std::string defaultText, std::string name,
+            std::unordered_map<std::string, std::string> argsMap={}, bool replace=true);
     };
 
     template <GameTalker T, GameState S>
@@ -91,14 +97,18 @@ export namespace tba {
     public:
         T talker;
         S state;
-        Room<S> currentRoom;
+        std::unordered_map<RoomName, Room<S>> rooms;
         Format saveFormat;
 
         void runGame();
         std::string tryAction(std::vector<std::string> args);
         void checkEvents();
-        void setStartingRoom(Room<S> room);
-        void goNextRoom(std::string direction);
+
+        Room<S>& getCurrentRoom();
+        void addStartingRoom(RoomName roomName, Room<S> room={});
+        bool addConnectingRoom(Direction direction, RoomName newRoom, Room<S> room, Direction reverseDirection="", RoomName oldRoom="");
+        void goNextRoom(Direction direction);
+
         std::pair<bool, std::chrono::microseconds> saveGame(Format format);
         std::pair<bool, std::chrono::microseconds> loadGame(Format format);
     };
@@ -114,6 +124,7 @@ export namespace tba {
     public:
         std::unordered_map<std::string, std::variant<bool, int, std::string>> flags;
         bool gameEnd;
+        RoomName currentRoom;
     };
 
     // Implementation begins here:
@@ -169,15 +180,39 @@ export namespace tba {
     template<GameState S>
     bool Room<S>::setDescription(std::string description, std::string name, bool replace)
     {
-        EventFunc<S> descriptionEvent = [=](Room<S>&, S&) {
+        EventFunc<S> descriptionEvent = [=](Room<S>& r, S& s) {
             return std::make_pair(true, description);
         };
         if (replace) {
-            events.add("description", Event{descriptionEvent});
+            events.add(name, Event{descriptionEvent});
             return true;
         }
         else {
-            return events.emplace("description", Event{descriptionEvent});
+            return events.emplace(name, Event{descriptionEvent});
+        }
+    }
+
+    // setTextAction creates an Action which prints the specified text string
+    // returns true if successfully add Event to events
+    template<GameState S>
+    bool Room<S>::setTextAction(std::string defaultText, std::string name,
+        std::unordered_map<std::string, std::string> argsMap, bool replace)
+    {
+        ActionFunc<S> textAction =
+            [=](Room<S>& r, S& s, std::vector<std::string> args) {
+                if (!args.empty()) {
+                    if (argsMap.contains(args[0])) {
+                        return std::make_pair(true, argsMap.at(args[0]));
+                    }
+                }
+                return std::make_pair(true, defaultText);
+            };
+        if (replace) {
+            actions.insert_or_assign(name, Action{textAction});
+            return true;
+        }
+        else {
+            return actions.emplace(name, Action{textAction}).second;
         }
     }
 
@@ -189,14 +224,16 @@ export namespace tba {
         checkEvents();
         while (true) {
             std::cout << "\nCurrently available actions:\n";
-            for (const auto& [key, action] : currentRoom.actions) {
-                std::cout << key << "\n";
+            for (const auto& [key, action] : getCurrentRoom().actions) {
+                if (key != "go" && key != "save" && key != "quit") {
+                    std::cout << key << "\n";
+                }
             }
-            std::cout << "go\nsave\nquit\n\n";
+            std::cout << "go\nsave\nquit\n\n-----\n";
 
             std::vector<std::string> args = talker.getInput();
             std::string output = tryAction(args);
-            std::cout << "\n-----\n" << output << "\n\n";
+            std::cout << "\n" << output << "\n";
 
             if (output == "Quitting now...") {
                 return;
@@ -211,41 +248,47 @@ export namespace tba {
         args.erase(args.begin()); // remove action from args
 
         // check for quit game
-        if (actionName == "quit" && args.size() == 0) {
+        if (actionName == "quit" && args.empty()) {
             return "Quitting now...";
         }
 
         // check for and validate go action
-        if (actionName == "go" && (args.size() != 1 || !currentRoom.connections.contains(args[0]))) {
+        if (actionName == "go" && (args.size() != 1 || !getCurrentRoom().connections.contains(args[0]))) {
             std::cout << "\nCurrently available directions:\n";
-            for (const auto& [key, action] : currentRoom.connections) {
+            for (const auto& [key, action] : getCurrentRoom().connections) {
                 std::cout << key << "\n";
             }
-            return "Location not found!";
+            if (args.empty()) {
+                return "Where would you like to go?";
+            }
+            else {
+                return "Location not found!";
+            }
         }
 
         // search and run room actions
-        auto actionIt = currentRoom.actions.find(actionName);
         std::string actionOutput = "";
-        if (actionIt != currentRoom.actions.end()) {
-            auto [success, output] = actionIt->second.run(currentRoom, state, args);
+        bool actionSuccess = true;
+        if (getCurrentRoom().actions.contains(actionName)) {
+            auto [success, output] = getCurrentRoom().actions.at(actionName).run(getCurrentRoom(), state, args);
             if (success) {
                 actionOutput = output;
-                
             }
             else {
                 actionOutput = "Action failed: " + output;
+                actionSuccess = false;
             }
         }
         else if (actionName != "go") {
             // action is not a room action or a go action
             actionOutput = "Invalid action!";
         }
-        else {
+
+        if (actionName == "go" && actionSuccess) {
             // run a valid go action
-            // TODO: uncomment below when goNextRoom is implemented
-            // goNextRoom(args[1]);
-            actionOutput = "Moved " + args[1] + ": " + actionOutput;
+            goNextRoom(args[0]);
+            std::cout << "\n" << actionOutput << "\n";
+            actionOutput = "Moved " + args[0] + ".";
             checkEvents();
         }
         return actionOutput;
@@ -254,17 +297,60 @@ export namespace tba {
     template <GameTalker T, GameState S>
     void GameRunner<T, S>::checkEvents()
     {
-        for (const auto& key : currentRoom.events.order) {
-            auto eventIt = currentRoom.events.map.find(key);
-            if (eventIt != currentRoom.events.map.end()) {
-                auto [success, output] = eventIt->second.run(currentRoom, state);
-                if (success) {
-                    std::cout << output << "\n";
-                }
+        for (const auto& key : getCurrentRoom().events.order) {
+            auto [success, output] = getCurrentRoom().events.map.at(key).run(getCurrentRoom(), state);
+            if (success) {
+                std::cout << output << "\n";
             }
-            else {
-                std::cout << "internal error: could not find event\n";
-            }
+        }
+    }
+    
+    template <GameTalker T, GameState S>
+    Room<S>& GameRunner<T, S>::getCurrentRoom()
+    {
+        if (!rooms.contains(state.currentRoom)) {
+            std::cerr << "internal error: missing current room\n";
+        }
+        return rooms.at(state.currentRoom);
+    }
+
+    template <GameTalker T, GameState S>
+    void GameRunner<T, S>::addStartingRoom(RoomName roomName, Room<S> room)
+    {
+        rooms.insert_or_assign(roomName, room);
+        state.currentRoom = roomName;
+    }
+
+    template <GameTalker T, GameState S>
+    bool GameRunner<T, S>::addConnectingRoom(Direction direction, RoomName newRoom, Room<S> room,
+        Direction reverseDirection, RoomName oldRoom)
+    {
+        if (oldRoom.empty()) {
+            oldRoom = state.currentRoom;
+        }
+        
+        if (!reverseDirection.empty()) {
+            room.connections.insert_or_assign(reverseDirection, oldRoom);
+        }
+
+        rooms.insert_or_assign(newRoom, room);
+
+        if (!rooms.contains(oldRoom)) {
+            return false;
+        }
+        rooms.at(oldRoom).connections.insert_or_assign(direction, newRoom);
+
+        return true;
+    }
+
+    template <GameTalker T, GameState S>
+    void GameRunner<T, S>::goNextRoom(Direction direction)
+    {
+        if (getCurrentRoom().connections.contains(direction)) {
+            state.currentRoom = getCurrentRoom().connections.at(direction);
+        }
+        else {
+            std::cout << "This place does not exist!\n";
         }
     }
 }
