@@ -22,6 +22,8 @@ import <stdexcept>;
 
 export namespace tba {
     // concept definitions
+    enum class Format {json};
+
     template<typename T>
     concept GameTalker = requires(T t) {
         { t.history } -> std::same_as<std::vector<std::string>>;
@@ -52,7 +54,6 @@ export namespace tba {
     using RoomName = std::string;
 
     // class definitions
-    enum class Format {json};
 
     template <GameState S>
     class Event {
