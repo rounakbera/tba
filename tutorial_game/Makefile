@@ -1,5 +1,5 @@
 CC  = clang-11
-CXX = clang-11 --driver-mode=g++
+CXX = clang-11 --driver-mode=g++ -stdlib=libc++
 
 INCLUDES = -I ../lib
 

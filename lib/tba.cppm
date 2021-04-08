@@ -29,9 +29,11 @@ export namespace tba {
     };
 
     template<typename S>
-    concept GameState = requires(S s, std::string d) {
+    concept GameState = requires(S s, tba::Format f) {
         { s.gameEnd } -> std::same_as<bool>;
         { s.currentRoom } -> std::same_as<std::string>;
+        { s.save(f) } -> std::same_as<std::pair<bool, std::chrono::microseconds>>;
+        { s.load(f) } -> std::same_as<std::pair<bool, std::chrono::microseconds>>;
     };
 
     // class forward declarations
