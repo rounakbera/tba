@@ -35,7 +35,7 @@ export namespace tba {
         { s.gameEnd } -> std::same_as<bool>;
         { s.currentRoom } -> std::same_as<std::string>;
         s.serialize(myOStream, format); // TODO: how to enforce the return is void
-        //s.deserialize(myIStream, format); // TODO: returns a GameState, is this possible?
+        s.deserialize(myIStream, format); // TODO: returns a GameState, is this possible?
     };
 
     // class forward declarations
@@ -132,9 +132,9 @@ export namespace tba {
         RoomName currentRoom;
 
         void serialize(std::ostream& myOStream, std::string format);
-        //DefaultGameState* deserialize(std::istream& myIStream, std::string format);
+        DefaultGameState* deserialize(std::istream& myIStream, std::string format);
         void serializeJson(std::ostream& out);
-        // DefaultGameState* deserializeJson(std::istream& in);
+        DefaultGameState* deserializeJson(std::istream& in);
     };
 
     // Implementation begins here:
@@ -404,10 +404,9 @@ export namespace tba {
         auto start = std::chrono::high_resolution_clock::now();
 
         state.serialize(myOStream, saveFormat);
-        std::ofstream outfile("output.txt");
+        std::ofstream outfile("output.txt"); // TODO: different file name or user input
         outfile << myBuf.str();
         outfile.close();
-        //std::cout << myBuf.str() <<std::endl;
 
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
@@ -420,12 +419,21 @@ export namespace tba {
     template <GameTalker T, GameState S>
     std::pair<bool, std::chrono::microseconds> GameRunner<T, S>::loadGame()
     {
+ 
+        // For testing the new state
         std::stringbuf myBuf;
-        std::istream myIStream(&myBuf);
+        std::ostream myOStream(&myBuf);
 
         auto start = std::chrono::high_resolution_clock::now();
 
-        //state = state.deserialize(myIStream, saveFormat);
+        std::ifstream infile("output.txt");
+        state = *(state.deserialize(infile, saveFormat));
+
+        // read the new state
+        state.serialize(myOStream, saveFormat);
+        std::cout << myBuf.str();
+
+        infile.close();
 
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);

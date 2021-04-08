@@ -33,30 +33,32 @@ void tba::DefaultGameState::serializeJson(std::ostream& out)
     out << "currentRoom: " << currentRoom << " }";
 }
 
+tba::DefaultGameState* tba::DefaultGameState::deserializeJson(std::istream& in)
+{
+    tba::DefaultGameState *newGS = new tba::DefaultGameState;
+    newGS->flags.insert(std::make_pair("newTest", 777));
+    newGS->currentRoom = "main hold";
+    newGS->gameEnd = false;
+    return newGS;
+}
+
 void tba::DefaultGameState::serialize(std::ostream& mystream, std::string format) 
 {
     if (format == "json") {
         serializeJson(mystream);
     }
-    // } else if (format == "binary") {
+    // else if (format == "binary") {
     //     saveSerial();
     // }
     else return;
 }
 
-// void tba::DefaultGameState::deserialize(std::string format)
-// {
-//     if (format == "json") {
-//         loadJson();
-//     } else if (format == "binary") {
-//         loadSerial();
-//     }
-//     else return;
-// }
-
-
-
-// bool tba::DefaultGameState::saveSerial()
-// {
-    
-// }
+tba::DefaultGameState* tba::DefaultGameState::deserialize(std::istream& in, std::string format)
+{
+    if (format == "json") {
+        return deserializeJson(in);
+    }
+    //  else if (format == "binary") {
+    //     loadSerial();
+    // }
+}
