@@ -31,6 +31,7 @@ int main()
     std::ios_base::sync_with_stdio(false); // iostream optimization
 
     tba::GameRunner<tba::DefaultGameTalker, tba::DefaultGameState> gameRunner {};
+    gameRunner.setSaveFormat("json");
     /*gameRunner.addStartingRoom("start");
     gameRunner.runGame();
     std::cout << "Game has quit\n";*/

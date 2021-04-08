@@ -30,7 +30,7 @@ export namespace tba {
     };
 
     template<typename S>
-    concept GameState = requires(S s, std::string format, std::ostringstream& myStream) {
+    concept GameState = requires(S s, std::string format, std::ostream& myStream) {
         { s.gameEnd } -> std::same_as<bool>;
         { s.currentRoom } -> std::same_as<std::string>;
         s.serialize(myStream, format);
@@ -130,9 +130,9 @@ export namespace tba {
         bool gameEnd;
         RoomName currentRoom;
 
-        void serialize(std::ostringstream& mystream, std::string format);
+        void serialize(std::ostream& mystream, std::string format);
         //bool deserialize(std::string format);
-        void serializeJson(std::ostringstream& out);
+        void serializeJson(std::ostream& out);
     };
 
     // Implementation begins here:
@@ -396,13 +396,13 @@ export namespace tba {
     template <GameTalker T, GameState S>
     std::pair<bool, std::chrono::microseconds> GameRunner<T, S>::saveGame()
     {
-        std::ostringstream myStream;
+        std::stringbuf myBuf;
+        std::ostream myStream(&myBuf);
 
         auto start = std::chrono::high_resolution_clock::now();
 
         state.serialize(myStream, saveFormat);
-        auto teststr = myStream.str();
-        std::cout << teststr << "\n" << std::endl;
+        std::cout << myBuf.str() <<std::endl;
 
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);

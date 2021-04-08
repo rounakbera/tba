@@ -3,13 +3,14 @@ module tba;
 import <vector>;
 import <string>;
 import <sstream>;
+import <iostream>;
 
-void tba::DefaultGameState::serializeJson(std::ostringstream& out)
+void tba::DefaultGameState::serializeJson(std::ostream& out)
 {
-    out << "test\n\n\n";
+    out << "test";
 }
 
-void tba::DefaultGameState::serialize(std::ostringstream& mystream, std::string format) 
+void tba::DefaultGameState::serialize(std::ostream& mystream, std::string format) 
 {
     if (format == "json") {
         serializeJson(mystream);
