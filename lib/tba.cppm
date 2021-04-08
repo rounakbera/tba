@@ -116,8 +116,6 @@ export namespace tba {
 
         std::pair<bool, std::chrono::microseconds> saveGame();
         std::pair<bool, std::chrono::microseconds> loadGame();
-        void setSaveFormat(std::string newFormat);
-        void setBinaryNeeded(bool);
 
     private:
         std::ofstream getofstream(std::string filename);
@@ -445,18 +443,6 @@ export namespace tba {
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
         return {result, duration};
-    }
-
-    template <GameTalker T, GameState S>
-    void GameRunner<T, S>::setSaveFormat(std::string newFormat)
-    {
-        saveFormat = newFormat;
-    }
-
-    template <GameTalker T, GameState S>
-    void GameRunner<T, S>::setBinaryNeeded(bool binaryVal)
-    {
-        binaryNeeded = binaryVal;
     }
 
     template <GameTalker T, GameState S>
