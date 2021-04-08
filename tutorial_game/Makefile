@@ -1,12 +1,12 @@
 CC  = clang-11
 CXX = clang-11 --driver-mode=g++ -stdlib=libc++
 
-INCLUDES = -I ../lib
+INCLUDES = -I ../lib -I ../rapidxml/
 
 CFLAGS   = -g -Wall $(INCLUDES)
 CXXFLAGS = -g -Wall $(INCLUDES) -std=c++20 -O2 -fmodules -fprebuilt-module-path=.. -fmodule-file=$(MODULE)
 
-LDFLAGS = -g -L ../lib
+LDFLAGS = -g -L ../lib -L ../rapidxml/
 LDLIBS  = -ltba
 
 EXECUTABLE = main
