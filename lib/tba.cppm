@@ -19,6 +19,7 @@ import <functional>;
 import <variant>;
 import <algorithm>;
 import <stdexcept>;
+import <sstream>;
 
 export namespace tba {
     // concept definitions
@@ -29,10 +30,10 @@ export namespace tba {
     };
 
     template<typename S>
-    concept GameState = requires(S s, std::string format, std::iostream& io) {
+    concept GameState = requires(S s, std::string format, std::ostringstream& myStream) {
         { s.gameEnd } -> std::same_as<bool>;
         { s.currentRoom } -> std::same_as<std::string>;
-        s.serialize(io, format);
+        s.serialize(myStream, format);
         //s.deserialize(format);
     };
 
@@ -129,8 +130,9 @@ export namespace tba {
         bool gameEnd;
         RoomName currentRoom;
 
-        bool serialize(std::string format);
-        bool deserialize(std::string format);
+        void serialize(std::ostringstream& mystream, std::string format);
+        //bool deserialize(std::string format);
+        void serializeJson(std::ostringstream& out);
     };
 
     // Implementation begins here:
@@ -394,16 +396,18 @@ export namespace tba {
     template <GameTalker T, GameState S>
     std::pair<bool, std::chrono::microseconds> GameRunner<T, S>::saveGame()
     {
-        std::pair<bool, std::chrono::microseconds> toReturn;
-        std::iostream 
+        std::ostringstream myStream;
 
         auto start = std::chrono::high_resolution_clock::now();
-        auto data = state.serialize(saveFormat);
+
+        state.serialize(myStream, saveFormat);
+        auto teststr = myStream.str();
+        std::cout << teststr << "\n" << std::endl;
+
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         
-        toReturn.first = true;
-        toReturn.second = duration;
+        std::pair<bool, std::chrono::microseconds> toReturn {true, duration};
 
         return toReturn;
     }
@@ -411,16 +415,12 @@ export namespace tba {
     template <GameTalker T, GameState S>
     std::pair<bool, std::chrono::microseconds> GameRunner<T, S>::loadGame()
     {
-        std::pair<bool, std::chrono::microseconds> toReturn;
-
         auto start = std::chrono::high_resolution_clock::now();
-        auto data = state.deserialize(saveFormat);
+        //auto data = state.deserialize(saveFormat);
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         
-        toReturn.first = true;
-        toReturn.second = duration;
-
+        std::pair<bool, std::chrono::microseconds> toReturn {true, duration};
         return toReturn;
     }
 
