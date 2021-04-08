@@ -10,7 +10,7 @@ void tba::DefaultGameState::serializeJson(std::ostream& out)
 {
     out << "{ flags: { ";
 
-    for (auto const&p : flags) 
+    for (auto const& p : flags) 
     {
         if (std::holds_alternative<bool>(p.second)) 
         {
@@ -47,10 +47,36 @@ void tba::DefaultGameState::serialize(std::ostream& mystream, std::string format
     if (format == "json") {
         serializeJson(mystream);
     }
-    // else if (format == "binary") {
-    //     saveSerial();
-    // }
+    else if (format == "simple")
+    {
+        serializeSimple(mystream);
+    }
     else return;
+}
+
+void tba::DefaultGameState::serializeSimple(std::ostream& out)
+{
+    out << flags.size() << std::endl;
+    for (auto const& p : flags) 
+    {
+        if (std::holds_alternative<bool>(p.second)) 
+        {
+            auto val = std::get<bool>(p.second);
+            out << p.first << " : " << val << std::endl;
+        } 
+        else if (std::holds_alternative<int>(p.second)) 
+        {
+            auto val = std::get<int>(p.second);
+            out << p.first << " : " << val << std::endl;
+        } 
+        else if (std::holds_alternative<std::string>(p.second)) 
+        {
+            auto val = std::get<std::string>(p.second);
+            out << p.first << " : " << val << std::endl;
+        }
+    }
+    out << gameEnd << std::endl;
+    out << currentRoom;
 }
 
 tba::DefaultGameState* tba::DefaultGameState::deserialize(std::istream& in, std::string format)

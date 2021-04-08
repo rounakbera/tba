@@ -133,6 +133,9 @@ export namespace tba {
 
         void serialize(std::ostream& myOStream, std::string format);
         DefaultGameState* deserialize(std::istream& myIStream, std::string format);
+
+        void serializeSimple(std::ostream& out);
+        DefaultGameState* deserializeSimple(std::istream& in);
         void serializeJson(std::ostream& out);
         DefaultGameState* deserializeJson(std::istream& in);
     };
@@ -419,7 +422,6 @@ export namespace tba {
     template <GameTalker T, GameState S>
     std::pair<bool, std::chrono::microseconds> GameRunner<T, S>::loadGame()
     {
- 
         // For testing the new state
         std::stringbuf myBuf;
         std::ostream myOStream(&myBuf);
@@ -429,7 +431,7 @@ export namespace tba {
         std::ifstream infile("output.txt");
         state = *(state.deserialize(infile, saveFormat));
 
-        // read the new state
+        // for testing, read the new state
         state.serialize(myOStream, saveFormat);
         std::cout << myBuf.str();
 
