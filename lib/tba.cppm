@@ -22,8 +22,6 @@ import <stdexcept>;
 
 export namespace tba {
     // concept definitions
-    enum class Format {json};
-
     template<typename T>
     concept GameTalker = requires(T t) {
         { t.history } -> std::same_as<std::vector<std::string>>;
@@ -31,11 +29,11 @@ export namespace tba {
     };
 
     template<typename S>
-    concept GameState = requires(S s, tba::Format f) {
+    concept GameState = requires(S s, std::string format) {
         { s.gameEnd } -> std::same_as<bool>;
         { s.currentRoom } -> std::same_as<std::string>;
-        { s.save(f) } -> std::same_as<std::pair<bool, std::chrono::microseconds>>;
-        { s.load(f) } -> std::same_as<std::pair<bool, std::chrono::microseconds>>;
+        { s.save(format) } -> std::same_as<bool>;
+        { s.load(format) } -> std::same_as<bool>;
     };
 
     // class forward declarations
@@ -101,7 +99,7 @@ export namespace tba {
         T talker;
         S state;
         std::unordered_map<RoomName, Room<S>> rooms;
-        Format saveFormat;
+        std::string format;
 
         void runGame();
         std::string tryAction(std::vector<std::string> args);
@@ -112,8 +110,9 @@ export namespace tba {
         bool addConnectingRoom(Direction direction, RoomName newRoom, Room<S> room, Direction reverseDirection="", RoomName oldRoom="");
         void goNextRoom(Direction direction);
 
-        std::pair<bool, std::chrono::microseconds> saveGame(Format format);
-        std::pair<bool, std::chrono::microseconds> loadGame(Format format);
+        std::pair<bool, std::chrono::microseconds> saveGame();
+        std::pair<bool, std::chrono::microseconds> loadGame();
+        void setSaveFormat(std::string newFormat);
     };
 
     class DefaultGameTalker {
@@ -129,8 +128,8 @@ export namespace tba {
         bool gameEnd;
         RoomName currentRoom;
 
-        std::pair<bool, std::chrono::microseconds> save(Format format);
-        std::pair<bool, std::chrono::microseconds> load(Format format);
+        bool save(std::string format);
+        bool load(std::string format);
     };
 
     // Implementation begins here:
@@ -265,9 +264,15 @@ export namespace tba {
         if (actionName == "quit" && args.empty()) {
             return "Quitting now...";
         }
+        else if (actionName == "save") {
+            saveGame();
+        }
+        else if (actionName == "load") {
+            loadGame();
+        }
 
         // check for and validate go action
-        if (actionName == "go" && (args.size() != 1 || !getCurrentRoom().connections.contains(args[0]))) {
+        else if (actionName == "go" && (args.size() != 1 || !getCurrentRoom().connections.contains(args[0]))) {
             std::cout << "\nCurrently available directions:\n";
             for (const auto& [key, action] : getCurrentRoom().connections) {
                 std::cout << key << "\n";
@@ -377,9 +382,41 @@ export namespace tba {
     }
 
     template <GameTalker T, GameState S>
-    std::pair<bool, std::chrono::microseconds> GameRunner<T, S>::saveGame(Format format)
+    std::pair<bool, std::chrono::microseconds> GameRunner<T, S>::saveGame()
     {
+        std::pair<bool, std::chrono::microseconds> toReturn;
+
+        auto start = std::chrono::high_resolution_clock::now();
+        auto ok = S::save(format);
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         
+        toReturn.first = ok;
+        toReturn.second = duration;
+
+        return toReturn;
+    }
+
+    template <GameTalker T, GameState S>
+    std::pair<bool, std::chrono::microseconds> GameRunner<T, S>::loadGame()
+    {
+        std::pair<bool, std::chrono::microseconds> toReturn;
+
+        auto start = std::chrono::high_resolution_clock::now();
+        auto ok = S::load(format);
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        
+        toReturn.first = ok;
+        toReturn.second = duration;
+
+        return toReturn;
+    }
+
+    template <GameTalker T, GameState S>
+    void GameRunner<T, S>::setSaveFormat(std::string newFormat)
+    {
+        format = newFormat;
     }
 
 }

@@ -1,17 +1,14 @@
 module tba;
 
 import <vector>;
+import <string>;
 
-std::pair<bool, std::chrono::microseconds> tba::DefaultGameState::save(Format format)
+bool tba::DefaultGameState::save(std::string format)
 {
-    std::chrono::microseconds myTime{3};
-    std::pair<bool, std::chrono::microseconds> myPair(true, myTime);
-    return myPair;
+    return true;
 }
 
-std::pair<bool, std::chrono::microseconds> tba::DefaultGameState::load(Format format)
+bool tba::DefaultGameState::load(std::string format)
 {
-    std::chrono::microseconds myTime{3};
-    std::pair<bool, std::chrono::microseconds> myPair(true, myTime);
-    return myPair;
+    return true;
 }
