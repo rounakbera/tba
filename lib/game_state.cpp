@@ -55,8 +55,6 @@ bool tba::DefaultGameState::deserializeSimple(std::istream& in)
         flagEntry.erase(0, flagEntry.find(delimiter) + delimiter.length());
         auto val = flagEntry.substr(0, flagEntry.find(delimiter));
 
-        std::cout << key << " : " << val << "\n";
-
         flags.insert(std::make_pair(key, val));
     }
 
@@ -82,61 +80,73 @@ bool tba::DefaultGameState::serializeBinary(std::ostream& out)
 
     for (auto const& p : flags) 
     {
-        size_t keySize = p.first.size();
-        out.write((char *) &keySize, sizeof(keySize));
-        out.write(p.first.c_str(), keySize);
-
-        
+        writeString(out, p.first);
+        writeVariant(out, p.second);
     }
-    // {
-    //     if (std::holds_alternative<bool>(p.second)) 
-    //     {
-    //         auto val = std::get<bool>(p.second);
-    //         out << p.first << " : " << val << std::endl;
-    //     } 
-    //     else if (std::holds_alternative<int>(p.second)) 
-    //     {
-    //         auto val = std::get<int>(p.second);
-    //         out << p.first << " : " << val << std::endl;
-    //     } 
-    //     else if (std::holds_alternative<std::string>(p.second)) 
-    //     {
-    //         auto val = std::get<std::string>(p.second);
-    //         out << p.first << " : " << val << std::endl;
-    //     }
-    // }
-    // out << gameEnd << std::endl;
-    // out << currentRoom;
+
+    if (gameEnd) {
+        writeString(out, "true");
+    } else {
+        writeString(out, "false");
+    }
+    writeString(out, currentRoom);
     return true;
 }
 
+void tba::DefaultGameState::writeString(std::ostream& out, std::string str)
+{
+    size_t strSize = str.size();
+    out.write((char *) (&strSize), sizeof(strSize));
+    out.write(str.c_str(), strSize);
+}
 
+void tba::DefaultGameState::writeVariant(std::ostream& out, std::variant<bool, int, std::string> vals)
+{
+    if (std::holds_alternative<bool>(vals)) 
+    {
+        auto val = std::get<bool>(vals);
+        std::string bool_val;
+        if (val) bool_val = "true"; else bool_val = "false";
+        writeString(out, bool_val);
+    } 
+    else if (std::holds_alternative<int>(vals)) 
+    {
+        auto val = std::get<int>(vals);
+        writeString(out, std::to_string(val));
+    } 
+    else if (std::holds_alternative<std::string>(vals)) 
+    {
+        auto val = std::get<std::string>(vals);
+        val = "'" + val + "'";
+        writeString(out, val);
+    }
+}
 
 bool tba::DefaultGameState::deserializeBinary(std::istream& in)
 {
-    flags.clear();
-    std::string line;
-    std::getline(in, line);
-    for (int i=0; i<std::stoi(line); i++)
-    {
-        std::string flagEntry;
-        std::getline(in, flagEntry);
+    // flags.clear();
+    // std::string line;
+    // std::getline(in, line);
+    // for (int i=0; i<std::stoi(line); i++)
+    // {
+    //     std::string flagEntry;
+    //     std::getline(in, flagEntry);
 
-        std::string delimiter = " : ";
-        auto key = flagEntry.substr(0, flagEntry.find(delimiter));
-        flagEntry.erase(0, flagEntry.find(delimiter) + delimiter.length());
-        auto val = flagEntry.substr(0, flagEntry.find(delimiter));
+    //     std::string delimiter = " : ";
+    //     auto key = flagEntry.substr(0, flagEntry.find(delimiter));
+    //     flagEntry.erase(0, flagEntry.find(delimiter) + delimiter.length());
+    //     auto val = flagEntry.substr(0, flagEntry.find(delimiter));
 
-        std::cout << key << " : " << val << std::endl;
+    //     std::cout << key << " : " << val << std::endl;
 
-        flags.insert(std::make_pair(key, val));
-    }
+    //     flags.insert(std::make_pair(key, val));
+    // }
 
-    std::getline(in, line);
-    gameEnd = stoi(line);
+    // std::getline(in, line);
+    // gameEnd = stoi(line);
 
-    std::getline(in, line);
-    currentRoom = line;
+    // std::getline(in, line);
+    // currentRoom = line;
 
     return true;
 }
