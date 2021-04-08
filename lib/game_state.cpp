@@ -63,28 +63,30 @@ bool tba::DefaultGameState::deserializeSimple(std::istream& in)
 
 bool tba::DefaultGameState::serializeBinary(std::ostream& out)
 {
+    auto num_entries = std::to_string(flags.size());
 
-    out << flags.size() << std::endl;
-    for (auto const& p : flags) 
-    {
-        if (std::holds_alternative<bool>(p.second)) 
-        {
-            auto val = std::get<bool>(p.second);
-            out << p.first << " : " << val << std::endl;
-        } 
-        else if (std::holds_alternative<int>(p.second)) 
-        {
-            auto val = std::get<int>(p.second);
-            out << p.first << " : " << val << std::endl;
-        } 
-        else if (std::holds_alternative<std::string>(p.second)) 
-        {
-            auto val = std::get<std::string>(p.second);
-            out << p.first << " : " << val << std::endl;
-        }
-    }
-    out << gameEnd << std::endl;
-    out << currentRoom;
+    out.write(num_entries.c_str(), num_entries.size());
+    // out << flags.size() << std::endl;
+    // for (auto const& p : flags) 
+    // {
+    //     if (std::holds_alternative<bool>(p.second)) 
+    //     {
+    //         auto val = std::get<bool>(p.second);
+    //         out << p.first << " : " << val << std::endl;
+    //     } 
+    //     else if (std::holds_alternative<int>(p.second)) 
+    //     {
+    //         auto val = std::get<int>(p.second);
+    //         out << p.first << " : " << val << std::endl;
+    //     } 
+    //     else if (std::holds_alternative<std::string>(p.second)) 
+    //     {
+    //         auto val = std::get<std::string>(p.second);
+    //         out << p.first << " : " << val << std::endl;
+    //     }
+    // }
+    // out << gameEnd << std::endl;
+    // out << currentRoom;
     return true;
 }
 

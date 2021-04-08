@@ -403,12 +403,12 @@ export namespace tba {
     template <GameTalker T, GameState S>
     std::pair<bool, std::chrono::microseconds> GameRunner<T, S>::saveGame()
     {
-        std::stringbuf myBuf;
-        std::ostream myOStream(&myBuf);
+        // std::stringbuf myBuf;
+        std::ofstream outfile("savefile");
 
         auto start = std::chrono::high_resolution_clock::now();
 
-        auto result = state.serialize(myOStream, saveFormat);
+        auto result = state.serialize(outfile, saveFormat);
 
         if (!result) { // Something went wrong, let's return
             auto end = std::chrono::high_resolution_clock::now();
@@ -416,9 +416,9 @@ export namespace tba {
             return {false, duration};
         }
 
-        // Serialize succeeded
-        std::ofstream outfile("output.txt"); // TODO: different file name or user input
-        outfile << myBuf.str();
+        // // Serialize succeeded
+        // std::ofstream outfile("output.txt"); // TODO: different file name or user input
+        // outfile << myBuf.str();
         outfile.close();
 
         auto end = std::chrono::high_resolution_clock::now();
@@ -432,7 +432,7 @@ export namespace tba {
     {
         auto start = std::chrono::high_resolution_clock::now();
 
-        std::ifstream infile("output.txt");
+        std::ifstream infile("savefile");
         auto result = state.deserialize(infile, saveFormat);
         infile.close();
 
