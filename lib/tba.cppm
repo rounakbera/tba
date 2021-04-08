@@ -249,7 +249,7 @@ export namespace tba {
                     std::cout << key << "\n";
                 }
             }
-            std::cout << "go\nsave\nquit\n\n-----\n";
+            std::cout << "go\nsave\nload\nquit\n\n-----\n";
 
             std::vector<std::string> args = talker.getInput();
             std::string output = tryAction(args);
@@ -411,8 +411,7 @@ export namespace tba {
         if (!result) { // Something went wrong, let's return
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-            std::pair<bool, std::chrono::microseconds> toReturn {false, duration};
-            return toReturn;
+            return {false, duration};
         }
 
         // Serialize succeeded
@@ -423,9 +422,7 @@ export namespace tba {
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         
-        std::pair<bool, std::chrono::microseconds> toReturn {true, duration};
-
-        return toReturn;
+        return {true, duration};
     }
 
     template <GameTalker T, GameState S>
@@ -439,8 +436,8 @@ export namespace tba {
 
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        std::pair<bool, std::chrono::microseconds> toReturn {result, duration};
-        return toReturn;
+
+        return {result, duration};
     }
 
     template <GameTalker T, GameState S>
