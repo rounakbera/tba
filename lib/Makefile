@@ -11,7 +11,7 @@ LDFLAGS = -g
 LDLIBS  =
 
 LIBRARY = libtba.a
-OBJECTS = game_talker.o
+OBJECTS = game_talker.o game_state.o
 MOBJECTS = tba.o
 MODULE = tba.pcm
 

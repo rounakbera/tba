@@ -129,7 +129,8 @@ export namespace tba {
         bool gameEnd;
         RoomName currentRoom;
 
-        std::pair<bool, std::chrono::microseconds> save();
+        std::pair<bool, std::chrono::microseconds> save(Format format);
+        std::pair<bool, std::chrono::microseconds> load(Format format);
     };
 
     // Implementation begins here:
