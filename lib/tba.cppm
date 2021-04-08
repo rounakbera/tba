@@ -147,6 +147,8 @@ export namespace tba {
     }
 
     // EventMap member function defintions
+    // add inserts Event with replacement
+    // returns true if new insertion
     template <GameState S>
     bool EventMap<S>::add(std::string key, Event<S> event)
     {
@@ -157,6 +159,8 @@ export namespace tba {
         return isNew;
     }
 
+    // emplace inserts Event without replacement
+    // returns true on insertion
     template <GameState S>
     bool EventMap<S>::emplace(std::string key, Event<S> event)
     {
@@ -167,6 +171,8 @@ export namespace tba {
         return success;
     }
 
+    // erase removes Event if it exists
+    // returns true on removal
     template <GameState S>
     bool EventMap<S>::erase(std::string key)
     {
@@ -220,6 +226,7 @@ export namespace tba {
     }
 
     // GameRunner member function definitions
+    // runGame acts as the primary game loop
     template <GameTalker T, GameState S>
     void GameRunner<T, S>::runGame()
     {
@@ -244,6 +251,7 @@ export namespace tba {
         }
     }
 
+    // tryAction takes player input and attempts to parse and run it as an Action
     template <GameTalker T, GameState S>
     std::string GameRunner<T, S>::tryAction(std::vector<std::string> args)
     {
@@ -297,6 +305,8 @@ export namespace tba {
         return actionOutput;
     }
 
+    // checkEvents runs all events in the current Room
+    // run on entering a new Room
     template <GameTalker T, GameState S>
     void GameRunner<T, S>::checkEvents()
     {
@@ -308,6 +318,7 @@ export namespace tba {
         }
     }
     
+    // getCurrentRoom returns a reference to the current Room
     template <GameTalker T, GameState S>
     Room<S>& GameRunner<T, S>::getCurrentRoom()
     {
@@ -317,6 +328,7 @@ export namespace tba {
         return rooms.at(state.currentRoom);
     }
 
+    // addStartingRoom adds a Room to the map of Rooms and sets it as the current Room
     template <GameTalker T, GameState S>
     void GameRunner<T, S>::addStartingRoom(RoomName roomName, Room<S> room)
     {
@@ -324,6 +336,9 @@ export namespace tba {
         state.currentRoom = roomName;
     }
 
+    // addConnecting adds a Room to the map of Rooms and sets it as a connection to an existing room
+    // if reverseDirection is not empty, the existing Room is set as a connection to the new Room
+    // if oldRoom is empty, it is taken as the current Room
     template <GameTalker T, GameState S>
     bool GameRunner<T, S>::addConnectingRoom(Direction direction, RoomName newRoom, Room<S> room,
         Direction reverseDirection, RoomName oldRoom)
@@ -331,7 +346,7 @@ export namespace tba {
         if (oldRoom.empty()) {
             oldRoom = state.currentRoom;
         }
-        
+
         if (!reverseDirection.empty()) {
             room.connections.insert_or_assign(reverseDirection, oldRoom);
         }
@@ -346,6 +361,7 @@ export namespace tba {
         return true;
     }
 
+    // goNextRoom sets the current Room to the Room connected to the old current Room via the specified Direction
     template <GameTalker T, GameState S>
     void GameRunner<T, S>::goNextRoom(Direction direction)
     {
