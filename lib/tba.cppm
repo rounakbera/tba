@@ -136,6 +136,8 @@ export namespace tba {
 
         bool serializeSimple(std::ostream& out);
         bool deserializeSimple(std::istream& in);
+        bool serializeBinary(std::ostream& out);
+        bool deserializeBinary(std::istream& in);
         bool serializeJson(std::ostream& out);
         bool deserializeJson(std::istream& in);
     };
