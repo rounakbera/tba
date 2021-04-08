@@ -69,16 +69,35 @@ int main()
     mainHold.actions.insert_or_assign("greet", tba::Action{talkAction});
 
     std::unordered_map<std::string, std::string> holdGoTexts = {
-        {"up", "You climb up the ladder to the cockpit."}
+        {"up", "You climb up the ladder to the cockpit."},
+        {"left", "You walk down the hallway to the engine room."}
     };
     mainHold.setTextAction("", "go", holdGoTexts);
 
-    gameRunner.addStartingRoom("main hold", mainHold);
-
     tba::Room<tba::DefaultGameState> cockpit {};
-    cockpit.setDescription("You enter the cockpit. The pilot is leaning back at his chair.");
+    cockpit.setDescription("You enter the cockpit. The pilot is leaning back at her chair.");
+    cockpit.setTextAction("Who would you like to greet?", "greet",
+        {{"pilot", "\"Heya,\" the pilot waves back at you. \"Have you checked the shields yet?\""}});
 
+    tba::Room<tba::DefaultGameState> engineRoom {};
+    engineRoom.setDescription("The engine room is hot and filled with steam. "
+        "You see the hyperdrive and the shields. "
+        "A droid pokes his optical lens up at you.");
+    engineRoom.setTextAction("Who would you like to greet?", "greet",
+        {{"droid", "\"Beep beep boop boop,\" the droid says."}});
+    engineRoom.setTextAction("What would you like to inspect?", "inspect",
+        {{"droid", "The droid jumps back, startled. \"Beep beep beep boop boop boop!\" he exclaims."},
+        {"shields", "You run a diagnostic on the shields. They are damaged."},
+        {"hyperdrive", "You run a diagnostic on the hyperdrive. It is perfectly functional."}});
+    
+    tba::Room<tba::DefaultGameState> cargoHold {};
+    cargoHold.setDescription("You enter the cargo hold. "
+        "It is currently empty, as you and your crew have just sold the remaining stock.");
+
+    gameRunner.addStartingRoom("main hold", mainHold);
     gameRunner.addConnectingRoom("up", "cockpit", cockpit, "down");
+    gameRunner.addConnectingRoom("left", "engine room", engineRoom, "right");
+    gameRunner.addConnectingRoom("left", "cargo hold", cargoHold, "back", "engine room");
 
     gameRunner.runGame();
 
