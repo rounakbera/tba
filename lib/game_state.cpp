@@ -5,7 +5,6 @@ import <string>;
 import <iostream>;
 import <unordered_map>;
 import <variant>;
-import <regex>;
 
 void tba::DefaultGameState::serializeSimple(std::ostream& out)
 {
@@ -44,10 +43,11 @@ tba::DefaultGameState* tba::DefaultGameState::deserializeSimple(std::istream& in
         std::string flagEntry;
         std::getline(in, flagEntry);
 
-        std::regex delimiter{ " : " };
-        std::vector<std::string> keyVal(std::sregex_token_iterator(flagEntry.begin(), flagEntry.end(), delimiter, -1), {});
+        auto delimiter = " : ";
+        auto key = flagEntry.substr(0, flagEntry.find(delimiter));
+        auto val = flagEntry.substr(1, flagEntry.find(delimiter));
 
-        newGS->flags.insert(std::make_pair(keyVal[0], keyVal[1]));
+        newGS->flags.insert(std::make_pair(key, val));
     }
 
     std::getline(in, line);
