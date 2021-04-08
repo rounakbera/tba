@@ -34,7 +34,7 @@ export namespace tba {
     concept GameState = requires(S s, std::string format, std::ostream& myOStream, std::istream& myIStream) {
         { s.gameEnd } -> std::same_as<bool>;
         { s.currentRoom } -> std::same_as<std::string>;
-        s.serialize(myOStream, format); // TODO: how to enforce the return is void
+        { s.serialize(myOStream, format) } -> std::same_as<bool>;
         s.deserialize(myIStream, format); // TODO: returns a GameState, is this possible?
     };
 
@@ -131,12 +131,12 @@ export namespace tba {
         bool gameEnd;
         RoomName currentRoom;
 
-        void serialize(std::ostream& myOStream, std::string format);
+        bool serialize(std::ostream& myOStream, std::string format);
         DefaultGameState* deserialize(std::istream& myIStream, std::string format);
 
-        void serializeSimple(std::ostream& out);
+        bool serializeSimple(std::ostream& out);
         DefaultGameState* deserializeSimple(std::istream& in);
-        void serializeJson(std::ostream& out);
+        bool serializeJson(std::ostream& out);
         DefaultGameState* deserializeJson(std::istream& in);
     };
 
@@ -406,7 +406,16 @@ export namespace tba {
 
         auto start = std::chrono::high_resolution_clock::now();
 
-        state.serialize(myOStream, saveFormat);
+        auto result = state.serialize(myOStream, saveFormat);
+
+        if (!result) { // Something went wrong, let's return
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            std::pair<bool, std::chrono::microseconds> toReturn {false, duration};
+            return toReturn;
+        }
+
+        // Serialize succeeded
         std::ofstream outfile("output.txt"); // TODO: different file name or user input
         outfile << myBuf.str();
         outfile.close();
