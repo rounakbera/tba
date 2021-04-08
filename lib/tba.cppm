@@ -120,6 +120,7 @@ export namespace tba {
 
     private:
         std::ofstream getofstream(std::string filename);
+        std::ifstream getifstream(std::string filename);
     };
 
     class DefaultGameTalker {
@@ -407,36 +408,26 @@ export namespace tba {
     template <GameTalker T, GameState S>
     std::pair<bool, std::chrono::microseconds> GameRunner<T, S>::saveGame()
     {
-        // std::stringbuf myBuf;
         auto outfile = getofstream("savefile");
 
         auto start = std::chrono::high_resolution_clock::now();
 
         auto result = state.serialize(outfile, saveFormat);
-
-        if (!result) { // Something went wrong, let's return
-            auto end = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-            return {false, duration};
-        }
-
-        // // Serialize succeeded
-        // std::std::ofstream outfile("output.txt"); // TODO: different file name or user input
-        // outfile << myBuf.str();
         outfile.close();
 
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         
-        return {true, duration};
+        return {result, duration};
     }
 
     template <GameTalker T, GameState S>
     std::pair<bool, std::chrono::microseconds> GameRunner<T, S>::loadGame()
     {
+        auto infile = getifstream("savefile");
+
         auto start = std::chrono::high_resolution_clock::now();
 
-        std::ifstream infile("savefile");
         auto result = state.deserialize(infile, saveFormat);
         infile.close();
 
@@ -456,6 +447,19 @@ export namespace tba {
         else
         {
             return std::ofstream(filename);
+        }
+    } 
+
+    template <GameTalker T, GameState S>
+    std::ifstream GameRunner<T, S>::getifstream(std::string filename)
+    {
+        if (binaryNeeded)
+        {
+            return std::ifstream(filename, std::ios::binary);
+        }
+        else
+        {
+            return std::ifstream(filename);
         }
     } 
 

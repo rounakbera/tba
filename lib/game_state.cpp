@@ -6,6 +6,14 @@ import <iostream>;
 import <unordered_map>;
 import <variant>;
 
+
+/*
+format is:
+# of Entries in flags
+every kv pair in the map
+gameEnd
+currentRoom
+*/
 bool tba::DefaultGameState::serializeSimple(std::ostream& out)
 {
     out << flags.size() << "\n";
@@ -61,13 +69,25 @@ bool tba::DefaultGameState::deserializeSimple(std::istream& in)
     return true;
 }
 
+/*
+# of kv pairs (int)
+each kv pair (strlen|str|strlen|str)
+gameEnd (bool)
+currentRoom (strlen|str)
+*/
 bool tba::DefaultGameState::serializeBinary(std::ostream& out)
 {
-    auto num_entries = std::to_string(flags.size());
+    int num = flags.size();
+    out.write((char *) (&num), sizeof(num));
 
-    out.write(num_entries.c_str(), num_entries.size());
-    // out << flags.size() << std::endl;
-    // for (auto const& p : flags) 
+    for (auto const& p : flags) 
+    {
+        size_t keySize = p.first.size();
+        out.write((char *) &keySize, sizeof(keySize));
+        out.write(p.first.c_str(), keySize);
+
+        
+    }
     // {
     //     if (std::holds_alternative<bool>(p.second)) 
     //     {
@@ -89,6 +109,8 @@ bool tba::DefaultGameState::serializeBinary(std::ostream& out)
     // out << currentRoom;
     return true;
 }
+
+
 
 bool tba::DefaultGameState::deserializeBinary(std::istream& in)
 {
@@ -119,6 +141,14 @@ bool tba::DefaultGameState::deserializeBinary(std::istream& in)
     return true;
 }
 
+
+/*
+{
+    flags: {},
+    gameEnd: bool,
+    currentRoom: string
+}
+*/
 bool tba::DefaultGameState::serializeJson(std::ostream& out)
 {
     out << "{ flags: { ";
