@@ -425,8 +425,18 @@ export namespace tba {
         auto start = std::chrono::high_resolution_clock::now();
 
         std::ifstream infile("output.txt");
-        state = *(state.deserialize(infile, saveFormat));
+        auto newStatePtr = state.deserialize(infile, saveFormat);
         infile.close();
+
+        if (newStatePtr == nullptr) { // Something went wrong, let's return
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+            std::pair<bool, std::chrono::microseconds> toReturn {false, duration};
+            return toReturn;
+        }
+
+        // It went right
+        state = *newStatePtr;
 
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);

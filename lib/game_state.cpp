@@ -118,4 +118,5 @@ tba::DefaultGameState* tba::DefaultGameState::deserialize(std::istream& in, std:
     {
         return deserializeJson(in);
     }
+    else return nullptr;
 }
