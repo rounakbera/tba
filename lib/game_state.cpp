@@ -2,12 +2,21 @@ module tba;
 
 import <vector>;
 import <string>;
-import <sstream>;
 import <iostream>;
+import <unordered_map>;
+import <variant>;
 
 void tba::DefaultGameState::serializeJson(std::ostream& out)
 {
-    out << "test";
+    out << "{ flags: { ";
+
+    for (auto const&p : flags) 
+    {
+        out << p.first << ": " << std::get<0>(p.second) << ", ";
+    }
+
+    out << " }, gameEnd: " << gameEnd << " ,";
+    out << "currentRoom: " << currentRoom << " }";
 }
 
 void tba::DefaultGameState::serialize(std::ostream& mystream, std::string format) 
