@@ -145,6 +145,10 @@ export namespace tba {
         bool deserializeBinary(std::istream& in);
         bool serializeJson(std::ostream& out);
         bool deserializeJson(std::istream& in);
+
+    private:
+        void writeString(std::ostream&, std::string);
+        void writeVariant(std::ostream&, std::variant<bool, int, std::string>);
     };
 
     // Implementation begins here:
@@ -463,6 +467,7 @@ export namespace tba {
         }
     } 
 
+    template <GameTalker T, GameState S>
     void GameRunner<T, S>::setSaveState(Format formatName, bool binNeeded)
     {
         saveFormat = formatName;
