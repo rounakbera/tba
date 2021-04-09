@@ -143,8 +143,6 @@ export namespace tba {
         bool deserializeSimple(std::istream& in);
         bool serializeBinary(std::ostream& out);
         bool deserializeBinary(std::istream& in);
-        bool serializeJson(std::ostream& out);
-        bool deserializeJson(std::istream& in);
 
     private:
         void writeString(std::ostream&, std::string);
@@ -448,12 +446,10 @@ export namespace tba {
     template <GameTalker T, GameState S>
     std::ofstream GameRunner<T, S>::getofstream(std::string filename)
     {
-        if (binaryNeeded)
-        {
+        if (binaryNeeded) {
             return std::ofstream(filename, std::ios::binary);
         }
-        else
-        {
+        else {
             return std::ofstream(filename);
         }
     } 
@@ -461,12 +457,10 @@ export namespace tba {
     template <GameTalker T, GameState S>
     std::ifstream GameRunner<T, S>::getifstream(std::string filename)
     {
-        if (binaryNeeded)
-        {
+        if (binaryNeeded) {
             return std::ifstream(filename, std::ios::binary);
         }
-        else
-        {
+        else {
             return std::ifstream(filename);
         }
     } 

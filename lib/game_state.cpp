@@ -17,27 +17,21 @@ currentRoom
 bool tba::DefaultGameState::serializeSimple(std::ostream& out)
 {
     out << flags.size() << "\n";
-    for (auto const& p : flags) 
-    {
-        if (std::holds_alternative<bool>(p.second)) 
-        {
+    for (auto const& p : flags) {
+        if (std::holds_alternative<bool>(p.second)) {
             auto val = std::get<bool>(p.second);
-            if (val) 
-            {
+            if (val) {
                 out << p.first << " : true\n";
             }
-            else
-            {
+            else {
                 out << p.first << " : false\n";
             }
         } 
-        else if (std::holds_alternative<int>(p.second)) 
-        {
+        else if (std::holds_alternative<int>(p.second)) {
             auto val = std::get<int>(p.second);
             out << p.first << " : " << val << "\n";
         } 
-        else if (std::holds_alternative<std::string>(p.second)) 
-        {
+        else if (std::holds_alternative<std::string>(p.second)) {
             auto val = std::get<std::string>(p.second);
             out << p.first << " : '" << val << "'\n";
         }
@@ -52,8 +46,7 @@ bool tba::DefaultGameState::deserializeSimple(std::istream& in)
     flags.clear();
     std::string line;
     std::getline(in, line);
-    for (int i=0; i<std::stoi(line); i++)
-    {
+    for (int i=0; i<std::stoi(line); i++) {
         std::string flagEntry;
         std::getline(in, flagEntry);
 
@@ -61,8 +54,7 @@ bool tba::DefaultGameState::deserializeSimple(std::istream& in)
         auto key = flagEntry.substr(0, flagEntry.find(delimiter));
 
         flagEntry.erase(0, flagEntry.find(delimiter) + delimiter.length());
-        switch (flagEntry.at(0))
-        {
+        switch (flagEntry.at(0)) {
         case '\'': {
             auto valStr = flagEntry.substr(1, flagEntry.size() - 2);
             flags.insert(std::make_pair(key, valStr));
@@ -107,15 +99,15 @@ bool tba::DefaultGameState::serializeBinary(std::ostream& out)
     uint32_t num = flags.size();
     out.write((char *) (&num), sizeof(num));
 
-    for (auto const& p : flags) 
-    {
+    for (auto const& p : flags) {
         writeString(out, p.first);
         writeVariant(out, p.second);
     }
 
     if (gameEnd) {
         writeString(out, "true");
-    } else {
+    }
+    else {
         writeString(out, "false");
     }
     writeString(out, currentRoom);
@@ -131,20 +123,17 @@ void tba::DefaultGameState::writeString(std::ostream& out, std::string str)
 
 void tba::DefaultGameState::writeVariant(std::ostream& out, std::variant<bool, int, std::string> vals)
 {
-    if (std::holds_alternative<bool>(vals)) 
-    {
+    if (std::holds_alternative<bool>(vals)) {
         auto val = std::get<bool>(vals);
         std::string bool_val;
         if (val) bool_val = "true"; else bool_val = "false";
         writeString(out, bool_val);
     } 
-    else if (std::holds_alternative<int>(vals)) 
-    {
+    else if (std::holds_alternative<int>(vals)) {
         auto val = std::get<int>(vals);
         writeString(out, std::to_string(val));
     } 
-    else if (std::holds_alternative<std::string>(vals)) 
-    {
+    else if (std::holds_alternative<std::string>(vals)) {
         auto val = std::get<std::string>(vals);
         val = "'" + val + "'";
         writeString(out, val);
@@ -156,13 +145,11 @@ bool tba::DefaultGameState::deserializeBinary(std::istream& infile)
     flags.clear();
     auto numPairs = readNum(infile);
 
-    for (int i=0; i < numPairs; i++)
-    {
+    for (int i=0; i < numPairs; i++) {
         auto key = readNextString(infile);
         auto val = readNextString(infile);
 
-        switch (val.at(0))
-        {
+        switch (val.at(0)) {
         case '\'': {
             auto valStr = val.substr(1, val.size() - 2);
             flags.insert(std::make_pair(key, valStr));
@@ -188,8 +175,7 @@ bool tba::DefaultGameState::deserializeBinary(std::istream& infile)
 
     //read bool
     auto gamebool = readNextString(infile);
-    switch (gamebool.at(0))
-    {
+    switch (gamebool.at(0)) {
     case 't': {
         gameEnd = true;
         break;
@@ -223,80 +209,24 @@ std::string tba::DefaultGameState::readNextString(std::istream& infile)
     return str;
 }
 
-/*
-{
-    flags: {},
-    gameEnd: bool,
-    currentRoom: string
-}
-*/
-bool tba::DefaultGameState::serializeJson(std::ostream& out)
-{
-    out << "{ flags: { ";
-
-    for (auto const& p : flags) 
-    {
-        if (std::holds_alternative<bool>(p.second)) 
-        {
-            auto val = std::get<bool>(p.second);
-            out << p.first << ": " << val << ", ";
-        } 
-        else if (std::holds_alternative<int>(p.second)) 
-        {
-            auto val = std::get<int>(p.second);
-            out << p.first << ": " << val << ", ";
-        } 
-        else if (std::holds_alternative<std::string>(p.second)) 
-        {
-            auto val = std::get<std::string>(p.second);
-            out << p.first << ": " << val << ", ";
-        }
-    }
-
-    out << "}, gameEnd: " << gameEnd << ", ";
-    out << "currentRoom: " << currentRoom << " }";
-    return true;
-}
-
-bool tba::DefaultGameState::deserializeJson(std::istream& in)
-{
-    flags.clear();
-    flags.insert(std::make_pair("newTest", 777));
-    currentRoom = "main hold";
-    gameEnd = false;
-    return true;
-}
-
 bool tba::DefaultGameState::serialize(std::ostream& out, std::string format) 
 {
-    if (format == "simple")
-    {
+    if (format == "simple") {
         return serializeSimple(out);
     }
-    else if (format == "binary")
-    {
+    else if (format == "binary") {
         return serializeBinary(out);
-    }
-    else if (format == "json") 
-    {
-        return serializeJson(out);
     }
     else return false;
 }
 
 bool tba::DefaultGameState::deserialize(std::istream& in, std::string format)
 {
-    if (format == "simple")
-    {
+    if (format == "simple") {
         return deserializeSimple(in);
     }
-    else if (format == "binary")
-    {
+    else if (format == "binary") {
         return deserializeBinary(in);
-    }
-    else if (format == "json") 
-    {
-        return deserializeJson(in);
     }
     else return false;
 }

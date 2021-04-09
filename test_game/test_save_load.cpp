@@ -57,27 +57,21 @@ currentRoom
 bool TestGameState::serializeSimple(std::ostream& out)
 {
     out << flags.size() << "\n";
-    for (auto const& p : flags) 
-    {
-        if (std::holds_alternative<bool>(p.second)) 
-        {
+    for (auto const& p : flags) {
+        if (std::holds_alternative<bool>(p.second)) {
             auto val = std::get<bool>(p.second);
-            if (val) 
-            {
+            if (val) {
                 out << p.first << " : true\n";
             }
-            else
-            {
+            else {
                 out << p.first << " : false\n";
             }
         } 
-        else if (std::holds_alternative<int>(p.second)) 
-        {
+        else if (std::holds_alternative<int>(p.second)) {
             auto val = std::get<int>(p.second);
             out << p.first << " : " << val << "\n";
         } 
-        else if (std::holds_alternative<std::string>(p.second)) 
-        {
+        else if (std::holds_alternative<std::string>(p.second)) {
             auto val = std::get<std::string>(p.second);
             out << p.first << " : '" << val << "'\n";
         }
@@ -92,8 +86,7 @@ bool TestGameState::deserializeSimple(std::istream& in)
     flags.clear();
     std::string line;
     std::getline(in, line);
-    for (int i=0; i<std::stoi(line); i++)
-    {
+    for (int i=0; i<std::stoi(line); i++) {
         std::string flagEntry;
         std::getline(in, flagEntry);
 
@@ -101,8 +94,7 @@ bool TestGameState::deserializeSimple(std::istream& in)
         auto key = flagEntry.substr(0, flagEntry.find(delimiter));
 
         flagEntry.erase(0, flagEntry.find(delimiter) + delimiter.length());
-        switch (flagEntry.at(0))
-        {
+        switch (flagEntry.at(0)) {
         case '\'': {
             auto valStr = flagEntry.substr(1, flagEntry.size() - 2);
             flags.insert(std::make_pair(key, valStr));
@@ -147,15 +139,15 @@ bool TestGameState::serializeBinary(std::ostream& out)
     uint32_t num = flags.size();
     out.write((char *) (&num), sizeof(num));
 
-    for (auto const& p : flags) 
-    {
+    for (auto const& p : flags) {
         writeString(out, p.first);
         writeVariant(out, p.second);
     }
 
     if (gameEnd) {
         writeString(out, "true");
-    } else {
+    }
+    else {
         writeString(out, "false");
     }
     writeString(out, currentRoom);
@@ -171,20 +163,17 @@ void TestGameState::writeString(std::ostream& out, std::string str)
 
 void TestGameState::writeVariant(std::ostream& out, std::variant<bool, int, std::string> vals)
 {
-    if (std::holds_alternative<bool>(vals)) 
-    {
+    if (std::holds_alternative<bool>(vals)) {
         auto val = std::get<bool>(vals);
         std::string bool_val;
         if (val) bool_val = "true"; else bool_val = "false";
         writeString(out, bool_val);
     } 
-    else if (std::holds_alternative<int>(vals)) 
-    {
+    else if (std::holds_alternative<int>(vals)) {
         auto val = std::get<int>(vals);
         writeString(out, std::to_string(val));
     } 
-    else if (std::holds_alternative<std::string>(vals)) 
-    {
+    else if (std::holds_alternative<std::string>(vals)) {
         auto val = std::get<std::string>(vals);
         val = "'" + val + "'";
         writeString(out, val);
@@ -196,13 +185,11 @@ bool TestGameState::deserializeBinary(std::istream& infile)
     flags.clear();
     auto numPairs = readNum(infile);
 
-    for (int i=0; i < numPairs; i++)
-    {
+    for (int i=0; i < numPairs; i++) {
         auto key = readNextString(infile);
         auto val = readNextString(infile);
 
-        switch (val.at(0))
-        {
+        switch (val.at(0)) {
         case '\'': {
             auto valStr = val.substr(1, val.size() - 2);
             flags.insert(std::make_pair(key, valStr));
@@ -228,8 +215,7 @@ bool TestGameState::deserializeBinary(std::istream& infile)
 
     //read bool
     auto gamebool = readNextString(infile);
-    switch (gamebool.at(0))
-    {
+    switch (gamebool.at(0)) {
     case 't': {
         gameEnd = true;
         break;
@@ -265,42 +251,22 @@ std::string TestGameState::readNextString(std::istream& infile)
 
 bool TestGameState::serialize(std::ostream& out, std::string format) 
 {
-    if (format == "simple")
-    {
+    if (format == "simple") {
         return serializeSimple(out);
     }
-    else if (format == "binary")
-    {
+    else if (format == "binary") {
         return serializeBinary(out);
-    }
-    else if (format == "json") 
-    {
-        return serializeJson(out);
-    }
-    else if (format == "xml") 
-    {
-        return serializeXml(out);
     }
     else return false;
 }
 
 bool TestGameState::deserialize(std::istream& in, std::string format)
 {
-    if (format == "simple")
-    {
+    if (format == "simple") {
         return deserializeSimple(in);
     }
-    else if (format == "binary")
-    {
+    else if (format == "binary") {
         return deserializeBinary(in);
-    }
-    else if (format == "json") 
-    {
-        return deserializeJson(in);
-    }
-    else if (format == "xml") 
-    {
-        return deserializeXml(in);
     }
     else return false;
 }
@@ -402,28 +368,22 @@ bool TestGameState::serializeJson(std::ostream& out)
 
     std::string val;
 
-    for (auto const& p : flags) 
-    {
+    for (auto const& p : flags) {
         key.SetString(p.first.c_str(), allocator);
-        if (std::holds_alternative<bool>(p.second)) 
-        {
+        if (std::holds_alternative<bool>(p.second)) {
             auto boolVal = std::get<bool>(p.second);
-            if (boolVal)
-            {
+            if (boolVal) {
                 val = "true";
             }
-            else
-            {
+            else {
                 val = "false";
             }
         } 
-        else if (std::holds_alternative<int>(p.second)) 
-        {
+        else if (std::holds_alternative<int>(p.second)) {
             auto intVal = std::get<int>(p.second);
             val = std::to_string(intVal);
         } 
-        else if (std::holds_alternative<std::string>(p.second)) 
-        {
+        else if (std::holds_alternative<std::string>(p.second)) {
             auto stringVal = std::get<std::string>(p.second);
             val = "'" + stringVal + "'";
         }
@@ -449,25 +409,21 @@ bool TestGameState::deserializeJson(std::istream& in)
     // rapidjson::Reader<rapidjson::IStreamWrapper> reader(isw);
     rapidjson::Document d;
     d.ParseStream(isw);
-    if (d.HasParseError())
-    {
+    if (d.HasParseError()) {
         return false;
     }
 
     flags.clear();
     
-    for (rapidjson::Value::ConstMemberIterator it = d["flags"].MemberBegin(); it != d["flags"].MemberEnd(); ++it){
+    for (rapidjson::Value::ConstMemberIterator it = d["flags"].MemberBegin(); it != d["flags"].MemberEnd(); ++it) {
         auto val = it;
-        if(val->value.IsBool())
-        {
+        if(val->value.IsBool()) {
             flags[val->name.GetString()] = val->value.GetBool();
         }
-        else if (val->value.IsInt())
-        {
+        else if (val->value.IsInt()) {
             flags[val->name.GetString()] = val->value.GetInt();
         }
-        else if (val->value.IsString())
-        {
+        else if (val->value.IsString()) {
             flags[val->name.GetString()] = val->value.GetString();
         }
     }
