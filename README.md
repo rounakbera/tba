@@ -89,7 +89,7 @@ The man looks up and smiles at you. "Bored yet?"
 The woman makes eye contact with you but does not respond.
 ...
 -----
-> 
+>
 ```
 Now let's say we want to be able to poke the woman after her lack of response. To do this, we can write out the `Action` in its expanded form. This also allows us to create different cases for no arguments and invalid ones.
 ```cpp
@@ -140,7 +140,7 @@ quit
 The woman glares at you.
 ...
 -----
-> 
+>
 ```
 These added actions can also similarly modify the actions. For instance, we can add an action that removes itself.
 ```cpp
@@ -185,7 +185,7 @@ load
 quit
 
 -----
-> 
+>
 ```
 Note that these modifications are not currently persistent in the latest version of TBA. For now, information which cannot be lost on reloading the game should be stored in the `GameState`, which we will demonstrate later.
 
@@ -301,7 +301,7 @@ load
 quit
 
 -----
-> 
+>
 ```
 As can be seen above, `DefaultGameState.flags` provides an `unordered_map` of `string` to `variant<bool, int, string>`, which you allows you to easily define your own game state without providing your own `GameState` class.
 
@@ -336,7 +336,7 @@ In a text-based adventure game, there is of course not really much of a performa
 
 One possible bottleneck is saving and loading the game, since that requires generation/parsing and writing/reading. Even though this time always remains small for usual `GameState`s that we'd expect for a simple adventure game, we decided to push this to its limits.
 
-Although not neccessarily realistic in this scenario, it is still directly applicable to real situations that real games face: games must save/load and send/receive large amounts of data. When this gets large and under performance constraints, this makes the particulars of how the savefile is formatted and parsed paramount.
+Although not necessarily realistic in this scenario, it is still directly applicable to real situations that real games face: games must save/load and send/receive large amounts of data. When this gets large and under performance constraints, this makes the particulars of how the savefile is formatted and parsed paramount.
 
 We wrote custom serialization functions for text and binary (which are also provided in `DefaultGameState`) alongside functions which use JSON and XML (from the RapidJSON and RapidXML libraries). For N iterations, a test function inserts 1 random `int` value, 1 alternating `bool` value, and 1 random `string` value into the `flags` hash table. We did this for multiples of 2, from N = 2 up to N = 2<sup>23</sup> ~ 8 million. This creates files of up to ~500 MB for the more efficient save formats, and over ~2 GB for less efficient save formats.
 
@@ -359,7 +359,7 @@ We can separate the results out to saving and loading:
 
 ![](test_game/load_times.png)
 
-Interestingly, XML seems to perform much worse on saving compared to loading (relative to the other formats). Perhaps the code generation is more difficult than the parsing for XML. It may also be the case that XML may have been hit by certain performance costs due to the library details, such as custom allocator pools for cstrings. But RapidJSON also does something very similar here, so it seems more likely that this has to do with the format itself. Without further testing, however, we cannot rule out the role of implemenation details of the two libraries.
+Interestingly, XML seems to perform much worse on saving compared to loading (relative to the other formats). Perhaps the code generation is more difficult than the parsing for XML. It may also be the case that XML may have been hit by certain performance costs due to the library details, such as custom allocator pools for cstrings. But RapidJSON also does something very similar here, so it seems more likely that this has to do with the format itself. Without further testing, however, we cannot rule out the role of implementation details of the two libraries.
 
 ### Future work
 Our current serialization functionality is limited to the `GameState`. This unfortunately means that the state of the `Room`s is not persistent. While this may be an acceptable environment to develop in, we believe that our library could become much more powerful if the `Room`s, their connections, and their associated `Event`s/`Action`s can be stored at will.
