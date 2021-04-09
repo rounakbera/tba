@@ -52,7 +52,7 @@ The second argument sets a name for the `Event` which is unique to the `Room`. I
 `Event`s are actually wrappers for functions that take in the current `Room` and `GameState` information, and a `bool` marking success and a text output. Here we peel back the abstraction layer to set a second text description more explicitly:
 ```cpp
 EventFunc<DefaultGameState> descriptionEvent = [](auto& room, auto& state) {
-    return std::make_pair(true, "You look around and see two other people. "
+    return make_pair(true, "You look around and see two other people. "
     "One is a man, and the other is a woman.");
 };
 mainHold.events.emplace("description2", Event{descriptionEvent});
@@ -252,11 +252,11 @@ ActionFunc<DefaultGameState> cargoGoAction =
                 "but you see a stowaway droid blocking the path!");
         }
         else {
-            return std::make_pair(true, "You step past the burnt remains of "
+            return make_pair(true, "You step past the burnt remains of "
                 "the droid and make your way up.");
         }
     }
-    return std::make_pair(true, "You exit the cargo hold.");
+    return make_pair(true, "You exit the cargo hold.");
 };
 cargoHold.actions.insert_or_assign("go", Action{cargoGoAction});
 ```
