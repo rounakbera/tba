@@ -49,7 +49,7 @@ mainHold.setDescription("You are sitting in a passenger "
 ```
 The second argument sets a name for the `Event` which is unique to the `Room`. If a name is not specified, it is set to `"description"` by default.
 
-`Event`s are actually wrappers for functions that take in the curren `Room` and `GameState` information, and a `bool` marking success and a text output. Here we peel back the abstraction layer to set a second text description more explicitly:
+`Event`s are actually wrappers for functions that take in the current `Room` and `GameState` information, and a `bool` marking success and a text output. Here we peel back the abstraction layer to set a second text description more explicitly:
 ```cpp
 EventFunc<DefaultGameState> descriptionEvent = [](auto& room, auto& state) {
     return std::make_pair(true, "You look around and see two other people. "
@@ -89,7 +89,7 @@ The man looks up and smiles at you. "Bored yet?"
 The woman makes eye contact with you but does not respond.
 ...
 -----
-> 
+>
 ```
 Now let's say we want to be able to poke the woman after her lack of response. To do this, we can write out the `Action` in its expanded form. This also allows us to create different cases for no arguments and invalid ones.
 ```cpp
@@ -140,7 +140,7 @@ quit
 The woman glares at you.
 ...
 -----
-> 
+>
 ```
 These added actions can also similarly modify the actions. For instance, we can add an action that removes itself.
 ```cpp
@@ -185,7 +185,7 @@ load
 quit
 
 -----
-> 
+>
 ```
 Note that these modifications are not currently persistent in the latest version of TBA. For now, information which cannot be lost on reloading the game should be stored in the `GameState`, which we will demonstrate later.
 
@@ -301,7 +301,7 @@ load
 quit
 
 -----
-> 
+>
 ```
 As can be seen above, `DefaultGameState.flags` provides an `unordered_map` of `string` to `variant<bool, int, string>`, which you allows you to easily define your own game state without providing your own `GameState` class.
 
@@ -329,10 +329,37 @@ To allow for the greatest flexibility, we treat game events as `function`s which
 
 The developer can therefore define their own game events as lambda functions and then store them in the relevant `Room`. Repeated events/actions can of course be copied to each relevant `Room`. The library provides functions to generate text-only `Event`s and `Action`s (the latter taking an `unordered_map` to deal with string arguments). The programmer can similarly define their own functions to generate often-used `Event`s and `Action`s. For example, in a combat-heavy game, the developer can create a function that generates a `function` which handles the intricacies of combat.
 
-Finally, we provide functionality to save and load the game. The `DefaultGameState` provides two serializing formats: a simple text format, and a simple binary format. A user-provided `GameState` can also provide their own formats.
+Finally, we provide functionality to save and load the game. The `DefaultGameState` provides two serializing formats: a simple text format, and a simple binary format. A user-provided `GameState` can also (and must) provide its own save formats (and associated serializing/deserializing functionality).
 
 ### Performance measurements
+In a text-based adventure game, there is of course not really much of a performance bottleneck on modern systems. Everything executes near-instantaneously under normal conditions.
 
+One possible bottleneck is saving and loading the game, since that requires generation/parsing and writing/reading. Even though this time always remains small for usual `GameState`s that we'd expect for a simple adventure game, we decided to push this to its limits.
+
+Although not necessarily realistic in this scenario, it is still directly applicable to real situations that real games face: games must save/load and send/receive large amounts of data. When this gets large and under performance constraints, this makes the particulars of how the savefile is formatted and parsed paramount.
+
+We wrote custom serialization functions for text and binary (which are also provided in `DefaultGameState`) alongside functions which use JSON and XML (from the RapidJSON and RapidXML libraries). For N iterations, a test function inserts 1 random `int` value, 1 alternating `bool` value, and 1 random `string` value into the `flags` hash table. We did this for multiples of 2, from N = 2 up to N = 2<sup>23</sup> ~ 8 million. This creates files of up to ~500 MB for the more efficient save formats, and over ~2 GB for less efficient save formats.
+
+Let us first take a look at the raw results:
+![](test_game/total_times_nonlog.png)
+
+We appear to see a curved growth pattern on XML. If we remove XML from the dataset, we can see that the growth pattern in the other save formats is roughly linear.
+
+![](test_game/total_times_noxml.png)
+
+As might be expected, binary performs the best, followed by text, followed by JSON. The XML library performs surprisingly poorly, perhaps a combination of the increased file size and the more complex code generation/parsing which needs to be done.
+
+If we turn this to a log-log plot, all the curves are linear, which suggests that all of them are polynomial scaling relations:
+
+![](test_game/total_times_log.png)
+
+We can separate the results out to saving and loading:
+
+![](test_game/save_times.png)
+
+![](test_game/load_times.png)
+
+Interestingly, XML seems to perform much worse on saving compared to loading (relative to the other formats). Perhaps the code generation is more difficult than the parsing for XML. It may also be the case that XML may have been hit by certain performance costs due to the library details, such as custom allocator pools for cstrings. But RapidJSON also does something very similar here, so it seems more likely that this has to do with the format itself. Without further testing, however, we cannot rule out the role of implementation details of the two libraries.
 
 ### Future work
 Our current serialization functionality is limited to the `GameState`. This unfortunately means that the state of the `Room`s is not persistent. While this may be an acceptable environment to develop in, we believe that our library could become much more powerful if the `Room`s, their connections, and their associated `Event`s/`Action`s can be stored at will.
@@ -392,10 +419,9 @@ Basic directory structure:
 * `lib/`: library source code
 * `tutorial_game/`: game using library
 * `test_game/`: testing and data collection/analysis using library
+* `rapidjson/` and `rapidxml/`: JSON and XML parsing libraries, respectively, largely used for testing purposes
 
-The library and tutorial game are compiled separately.
-
-To build, run `make` in each directory. Please make sure you have Clang 11 installed.
+The library and tutorial game are compiled separately, as is the test program. To build, run `make` in each directory. Please make sure you have Clang 11 installed.
 
 I recommend using the clangd extension for debugging and intellisense on VS Code. With the current setup, errors still show up on clangd, but it largely works once you do an initial compilation.
 
