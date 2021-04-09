@@ -295,11 +295,11 @@ export namespace tba {
         else if (actionName == "load") {
             auto response = loadGame();
             if (response.first) {
+                checkEvents();
                 return "Game loaded; operation took " + std::to_string(response.second.count()) + " microseconds";
             } else {
                 return "Failed to load game; operation took " + std::to_string(response.second.count()) + " microseconds";
             }
-            checkEvents();
         }
         // check for and validate go action
         else if (actionName == "go" && (args.size() != 1 || !getCurrentRoom().connections.contains(args[0]))) {
