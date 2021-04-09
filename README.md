@@ -18,6 +18,9 @@ Manav Goel
     - [Performance measurements](#performance-measurements)
     - [Future work](#future-work)
   - [Manual](#manual)
+    - [Concepts](#concepts)
+    - [Types](#types)
+    - [Classes](#classes)
   - [Build instructions](#build-instructions)
 
 ## Tutorial
@@ -265,7 +268,6 @@ Gives output:
 Action failed: You try to climb forward, but you see a stowaway droid blocking the path!
 
 Currently available actions:
-befriend
 attack
 go
 save
@@ -340,6 +342,49 @@ The primary limiting factor here is that `std::function` is not serializable. Th
 Another issue we ran into in our implementation was Clang's limited support for C++20 features. In particular, we were hampered by the lack of module partitions, which led to our code and build chain being messier than they could have been. We also could have made use of the ranges library for string tokenization. Once these features are implemented in Clang/libc++, we will be able to make much nicer and cleaner code.
 
 ## Manual
+The following is a simplified reference manual for using the TBA library. It explains important concepts, types, and classes for a game developer using the library. For more detailed information, please review the module file for definitions, and the tutorial for usage.
+
+### Concepts
+* `GameTalker`: handles and tokenizes input, and stores a history of input
+* `GameState`: stores persistent game state, including whether the game has ended and the current room; must provide serializing/deserializing functions
+
+### Types
+* `EventFunc<GameState>`: an `std::function` which takes a `Room` and a `GameState` by reference, and returns a `bool` success flag and a `string` output (to be printed)
+* `ActionFunc<GameState>`: an `std::function` which takes a `Room` and a `GameState` by reference, as well as a `vector<string>` of arguments, and returns a `bool` success flag and a `string` output
+* `Direction`: a `string` name of a direction for a `Room` connection
+* `RoomName`: a `string` name of a `Room`
+* `Format`: a `string` name of a save format
+
+### Classes
+* `Event<GameState>`: wrapper for an `EventFunc`; intended to be run on entering a `Room`
+  * `Event()`: constructor takes an `EventFunc`
+* `Action<GameState>`: wrapper for an `ActionFunc`; intended to be run on player input
+  * `Action()`: constructor takes an `ActionFunc`
+* `EventMap<GameState>`: custom ordered hash map for `string`s to `Event`s
+  * `map`: `unordered_map` of keys and values
+  * `order`: `vector` of keys
+  * `add()`: insert with replacement; returns true on new insertion
+  * `emplace()`: insert without replacement; returns true on insertion
+  * `erase()`: deletes entry specified by key if it exists
+* `Room<GameState>`: stores room information
+  * `connections`: `unordered_map` of `Direction`s to `RoomName`s
+  * `events`: `EventMap` of event names to `Event`s
+  * `actions`: `unordered_map` of action names to `Action`s
+  * `setDescription()`: creates an `Event` which outputs specified description text
+  * `setTextAction()`: creates an `Action` which outputs specified text on specified input arguments
+* `GameRunner<GameTalker, GameState>`: owns all game information and provides game running functionality
+  * `state`: a `GameState` which is used to store game state
+  * `rooms`: an `unordered_map` of `RoomName`s to `Room`s, which stores all `Room`s in the game
+  * `runGame()`: starts the game; handles the game loop
+  * `getCurrentRoom()`: returns reference to the current `Room`
+  * `addStartingRoom()`: stores the given `Room` and sets it as the current `Room`
+  * `addConnectingRoom()`: stores the given `Room` and connects it to a specified `Room` via given `Direction`(s)
+  * `goNextRoom()`: moves player to `Room` in given `Direction` as specified by the current `Room`'s `connections`
+  * `setSaveState()`: sets the save `Format` and whether it is a binary or not
+* `DefaultGameState`: a `GameState` class which is bundled with the library
+  * `flags`: an `unordered_map` of `string` to `variant<bool, int, string>` which can be used to store custom game state
+  * `gameEnd`: whether the game has ended or not
+  * `currentRoom`: the name of the current `Room`
 
 ## Build instructions
 
