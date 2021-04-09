@@ -7,8 +7,8 @@ import <unordered_map>;
 import <string>;
 import <sstream>;
 import <fstream>;
-// clang modules are a bit buggy; may need to import some extra standard library modules
 import <variant>;
+// clang modules are a bit buggy; may need to import some extra standard library modules
 
 #include "../rapidxml/rapidxml.hpp"
 #include "../rapidxml/rapidxml_print.hpp"
@@ -64,9 +64,10 @@ bool XMLGameState::serialize(std::ostream& out, std::string format)
             val = std::get<std::string>(p.second);
             type = "string";
         }
-        rapidxml::xml_node<>* keyNode = doc.allocate_node(rapidxml::node_element, "key", p.first.c_str());
-        rapidxml::xml_node<>* valNode = doc.allocate_node(rapidxml::node_element, "val", val.c_str());
-        rapidxml::xml_attribute<> *typeAttr = doc.allocate_attribute("type", type.c_str());
+
+        rapidxml::xml_node<>* keyNode = doc.allocate_node(rapidxml::node_element, "key", doc.allocate_string(p.first.c_str()));
+        rapidxml::xml_node<>* valNode = doc.allocate_node(rapidxml::node_element, "val", doc.allocate_string(val.c_str()));
+        rapidxml::xml_attribute<> *typeAttr = doc.allocate_attribute("type", doc.allocate_string(type.c_str()));
         valNode->append_attribute(typeAttr);
 
         rapidxml::xml_node<>* flagNode = doc.allocate_node(rapidxml::node_element, "flag");
@@ -98,16 +99,15 @@ bool XMLGameState::deserialize(std::istream& in, std::string format)
     std::stringstream buffer;
     buffer << in.rdbuf();
     std::string str = buffer.str();
-    std::vector<char> vec(str.begin(), str.end());
 
     rapidxml::xml_document<> doc;
-    doc.parse<0>(vec.data());
+    doc.parse<0>(str.data());
 
     flags.clear();
     rapidxml::xml_node<>* flagsNode = doc.first_node("flags");
     for (rapidxml::xml_node<> *flagNode = flagsNode->first_node(); flagNode; flagNode = flagNode->next_sibling()) {
-        std::string key = flagsNode->first_node("key")->value();
-        rapidxml::xml_node<> *valNode = flagsNode->first_node("val");
+        std::string key = flagNode->first_node("key")->value();
+        rapidxml::xml_node<> *valNode = flagNode->first_node("val");
         std::string val = valNode->value();
         std::string type = valNode->first_attribute("type")->value();
 
@@ -126,21 +126,22 @@ bool XMLGameState::deserialize(std::istream& in, std::string format)
             flags.insert(std::make_pair(key, val));
         }
     }
-    flags.insert(std::make_pair("newTest", 777));
-    currentRoom = "main hold";
-    gameEnd = false;
+    
+    currentRoom = doc.first_node("currentRoom")->value();
+    std::string gameEndStr = doc.first_node("gameEnd")->value();
+    gameEnd = (gameEndStr == "true");
     return true;
 }
 
 using GameTalker = tba::DefaultGameTalker;
-using GameState = tba::DefaultGameState;
+using GameState = XMLGameState;
 
 int main()
 {
     std::ios_base::sync_with_stdio(false); // iostream optimization
 
     tba::GameRunner<GameTalker, GameState> gameRunner {};
-    gameRunner.setSaveState("simple", false);
+    gameRunner.setSaveState("xml", false);
     gameRunner.state.flags.insert(std::make_pair("testInt", 12));
     gameRunner.state.flags.insert(std::make_pair("testBool", true));
     gameRunner.state.flags.insert(std::make_pair("testString", "testing"));
