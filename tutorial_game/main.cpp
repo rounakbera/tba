@@ -145,10 +145,6 @@ int main()
     gameRunner.state.flags.insert(std::make_pair("testInt", 12));
     gameRunner.state.flags.insert(std::make_pair("testBool", true));
     gameRunner.state.flags.insert(std::make_pair("testString", "testing"));
-
-    /*gameRunner.addStartingRoom("start");
-    gameRunner.runGame();
-    std::cout << "Game has quit\n";*/
     
     // test code for event/action/room
     tba::Room<GameState> mainHold {};
@@ -210,13 +206,49 @@ int main()
     cargoHold.setDescription("You enter the cargo hold. "
         "It is currently empty, as you and your crew have just sold the remaining stock.");
 
+    cargoHold.connections.insert_or_assign("forward", "cockpit");
+
+    gameRunner.state.flags.insert(std::make_pair("is stowaway alive", true));
+    gameRunner.state.flags.insert(std::make_pair("is stowaway friend", false));
+
+    tba::ActionFunc<GameState> cargoGoAction = [](auto& room, auto& state, std::vector<std::string> args) {
+        if (!args.empty() && args[0] == "forward") {
+            bool isStowawayAlive = std::get<bool>(state.flags.at("is stowaway alive"));
+            bool isStowawayFriend = std::get<bool>(state.flags.at("is stowaway friend"));
+            if (isStowawayAlive && !isStowawayFriend) {
+                tba::ActionFunc<GameState> attackAction =
+                    [](auto& room, auto& state, std::vector<std::string> args) {
+                        room.actions.erase("attack");
+                        room.actions.erase("befriend");
+                        state.flags.insert_or_assign("is stowaway alive", false);
+                        return std::make_pair(true, "You blast the droid in its face. It falls over and dies.");
+                    };
+                tba::ActionFunc<GameState> befriendAction =
+                    [](auto& room, auto& state, std::vector<std::string> args) {
+                        room.actions.erase("attack");
+                        room.actions.erase("befriend");
+                        state.flags.insert_or_assign("is stowaway friend", true);
+                        return std::make_pair(true, "You pat the droid. It beeps quietly and gets out of the way.");
+                    };
+                room.actions.insert_or_assign("attack", tba::Action{attackAction});
+                room.actions.insert_or_assign("befriend", tba::Action{befriendAction});
+                return std::make_pair(false, "You try to climb forward, but you see a stowaway droid blocking the path!");
+            }
+            if (!isStowawayAlive) {
+                return std::make_pair(true, "You step past the burnt remains of the droid and make your way forward.");
+            }
+            if (isStowawayFriend) {
+                return std::make_pair(true, "You wave at the droid as you make your way forward. It waves back shyly.");
+            }
+        }
+        return std::make_pair(true, "You exit the cargo hold.");
+    };
+    cargoHold.actions.insert_or_assign("go", tba::Action{cargoGoAction});
+
     gameRunner.addStartingRoom("main hold", mainHold);
     gameRunner.addConnectingRoom("up", "cockpit", cockpit, "down");
     gameRunner.addConnectingRoom("left", "engine room", engineRoom, "right");
     gameRunner.addConnectingRoom("left", "cargo hold", cargoHold, "back", "engine room");
 
     gameRunner.runGame();
-
-    /*tba::GameRunner<MyGameTalker, tba::DefaultGameState> myGameRunner {};
-    myGameRunner.runGame();*/
 }
