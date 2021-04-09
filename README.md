@@ -49,7 +49,7 @@ mainHold.setDescription("You are sitting in a passenger "
 ```
 The second argument sets a name for the `Event` which is unique to the `Room`. If a name is not specified, it is set to `"description"` by default.
 
-`Event`s are actually wrappers for functions that take in the curren `Room` and `GameState` information, and a `bool` marking success and a text output. Here we peel back the abstraction layer to set a second text description more explicitly:
+`Event`s are actually wrappers for functions that take in the current `Room` and `GameState` information, and a `bool` marking success and a text output. Here we peel back the abstraction layer to set a second text description more explicitly:
 ```cpp
 EventFunc<DefaultGameState> descriptionEvent = [](auto& room, auto& state) {
     return std::make_pair(true, "You look around and see two other people. "
