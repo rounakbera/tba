@@ -268,7 +268,7 @@ export namespace tba {
             std::string output = tryAction(args);
             std::cout << "\n" << output << "\n";
 
-            if (output == "Quitting now...") {
+            if (state.gameEnd) {
                 return;
             }
         }
@@ -283,6 +283,7 @@ export namespace tba {
 
         // check for quit game
         if (actionName == "quit" && args.empty()) {
+            state.gameEnd = true;
             return "Quitting now...";
         }
         else if (actionName == "save") {

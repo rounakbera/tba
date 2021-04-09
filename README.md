@@ -9,6 +9,20 @@ Rounak Bera
 Justin Chen  
 Manav Goel
 
+## Table of contents
+- [tba: text-based adventures](#tba-text-based-adventures)
+  - [Table of contents](#table-of-contents)
+  - [Tutorial](#tutorial)
+  - [Design](#design)
+    - [Architectural overview](#architectural-overview)
+    - [Performance measurements](#performance-measurements)
+    - [Future work](#future-work)
+  - [Manual](#manual)
+    - [Concepts](#concepts)
+    - [Types](#types)
+    - [Classes](#classes)
+  - [Build instructions](#build-instructions)
+
 ## Tutorial
 To illustrate library usage, we have created a tutorial game. We will construct this game here. A working expanded version of it can be found in `tutorial_game/`.
 
@@ -254,7 +268,6 @@ Gives output:
 Action failed: You try to climb forward, but you see a stowaway droid blocking the path!
 
 Currently available actions:
-befriend
 attack
 go
 save
@@ -294,10 +307,84 @@ As can be seen above, `DefaultGameState.flags` provides an `unordered_map` of `s
 
 For greater flexibility, you can also define your own `GameState` with additional member variables. You must provide `currentRoom` and `gameEnd` variables, as well as serializing and deserializing functions.
 
+You can also define your own `GameTalker` concept. It must take and parse player input, and store an input history.
+
 ## Design
-The `GameRunner` is a class which owns all the game information and has the primary functions for running the game.
+
+The text-based adventure game is a well-trodden genre. Our goal with this library is to make use of modern C++ features and techniques in order to make programming such a game easy and intuitive for the game developer, while also being extensible and flexible. To do this, we make use of generic programming and also take a functional approach to game events.
+
+### Architectural overview
+
+The `GameRunner` is a class which owns all the game information and has the primary functions for running the game. This RAII approach allows for all resources to be managed on the lifetime of the `GameRunner`.
+
+To conform to this paradigm, `Room`s are stored as an `unordered_map` from `RoomName`s (which are `string`s) to `Room`s. Because `Room`s also contain a `unordered_map` of `Direction`s to `Room`s, this thus indirectly forms an adjacency list. Standard library functions make finding and accessing simple, and we provide helper functions to more easily create and assign new `Room`s and their connections.
+
+The `GameRunner` is a templated class, taking `GameState` and `GameTalker` concepts. This allows developers to define their own `GameState` and `GameTalker` classes as needed. `GameTalker` does input handling, and `GameState` stores persistent game information (and provides serializing functionality); both are things which are desirable to customize.
+
+For more quick and dirty setup, `DefaultGameState` and `DefaultGameTalker` are provided. `DefaultGameState` provides a basic `flags` container of type `unordered_map<string, variant<bool, int, string>>` to allow for flexible storage of state. This is effectively a bandaid solutions which pushes things onto the runtime, so a custom `GameState` is preferable for cleaner code on longer-term projects.
+
+The `GameRunner` also contains functions for handling game events, moving between `Room`s, and saving/loading the game.
+
+To allow for the greatest flexibility, we treat game events as `function`s which may be stored in `Room`s at will. These `function`s take the current `Room` and the `GameState` by reference so that they can easily modify both. We split these up into `Event`s, which are run on entering a `Room`; and `Action`s, which take string arguments and are run by the player. In each `Room`, `Action`s are stored in a `unordered_map`; `Event`s are stored in a custom ordered hash map so that they can be both easily accessed and iterated through in order.
+
+The developer can therefore define their own game events as lambda functions and then store them in the relevant `Room`. Repeated events/actions can of course be copied to each relevant `Room`. The library provides functions to generate text-only `Event`s and `Action`s (the latter taking an `unordered_map` to deal with string arguments). The programmer can similarly define their own functions to generate often-used `Event`s and `Action`s. For example, in a combat-heavy game, the developer can create a function that generates a `function` which handles the intricacies of combat.
+
+Finally, we provide functionality to save and load the game. The `DefaultGameState` provides two serializing formats: a simple text format, and a simple binary format. A user-provided `GameState` can also provide their own formats.
+
+### Performance measurements
+
+
+### Future work
+Our current serialization functionality is limited to the `GameState`. This unfortunately means that the state of the `Room`s is not persistent. While this may be an acceptable environment to develop in, we believe that our library could become much more powerful if the `Room`s, their connections, and their associated `Event`s/`Action`s can be stored at will.
+
+The primary limiting factor here is that `std::function` is not serializable. This is because certain information, such as the captured closure values, are stored in private class member fields. If we define our own `function` implementation, we should be able serialize the function pointer (though we may have to disable ASLR for this to work) and any closure values. This appears to have [been done before](https://stackoverflow.com/a/22772214). Though the code has not been made public, it should still be a feasible process. This change would allow the game programmer to fully express changes in `Event`/`Action` functions without having to rely on checking the `GameState` or dealing with issues of persistence.
+
+Another issue we ran into in our implementation was Clang's limited support for C++20 features. In particular, we were hampered by the lack of module partitions, which led to our code and build chain being messier than they could have been. We also could have made use of the ranges library for string tokenization. Once these features are implemented in Clang/libc++, we will be able to make much nicer and cleaner code.
 
 ## Manual
+The following is a simplified reference manual for using the TBA library. It explains important concepts, types, and classes for a game developer using the library. For more detailed information, please review the module file for definitions, and the tutorial for usage.
+
+### Concepts
+* `GameTalker`: handles and tokenizes input, and stores a history of input
+* `GameState`: stores persistent game state, including whether the game has ended and the current room; must provide serializing/deserializing functions
+
+### Types
+* `EventFunc<GameState>`: an `std::function` which takes a `Room` and a `GameState` by reference, and returns a `bool` success flag and a `string` output (to be printed)
+* `ActionFunc<GameState>`: an `std::function` which takes a `Room` and a `GameState` by reference, as well as a `vector<string>` of arguments, and returns a `bool` success flag and a `string` output
+* `Direction`: a `string` name of a direction for a `Room` connection
+* `RoomName`: a `string` name of a `Room`
+* `Format`: a `string` name of a save format
+
+### Classes
+* `Event<GameState>`: wrapper for an `EventFunc`; intended to be run on entering a `Room`
+  * `Event()`: constructor takes an `EventFunc`
+* `Action<GameState>`: wrapper for an `ActionFunc`; intended to be run on player input
+  * `Action()`: constructor takes an `ActionFunc`
+* `EventMap<GameState>`: custom ordered hash map for `string`s to `Event`s
+  * `map`: `unordered_map` of keys and values
+  * `order`: `vector` of keys
+  * `add()`: insert with replacement; returns true on new insertion
+  * `emplace()`: insert without replacement; returns true on insertion
+  * `erase()`: deletes entry specified by key if it exists
+* `Room<GameState>`: stores room information
+  * `connections`: `unordered_map` of `Direction`s to `RoomName`s
+  * `events`: `EventMap` of event names to `Event`s
+  * `actions`: `unordered_map` of action names to `Action`s
+  * `setDescription()`: creates an `Event` which outputs specified description text
+  * `setTextAction()`: creates an `Action` which outputs specified text on specified input arguments
+* `GameRunner<GameTalker, GameState>`: owns all game information and provides game running functionality
+  * `state`: a `GameState` which is used to store game state
+  * `rooms`: an `unordered_map` of `RoomName`s to `Room`s, which stores all `Room`s in the game
+  * `runGame()`: starts the game; handles the game loop
+  * `getCurrentRoom()`: returns reference to the current `Room`
+  * `addStartingRoom()`: stores the given `Room` and sets it as the current `Room`
+  * `addConnectingRoom()`: stores the given `Room` and connects it to a specified `Room` via given `Direction`(s)
+  * `goNextRoom()`: moves player to `Room` in given `Direction` as specified by the current `Room`'s `connections`
+  * `setSaveState()`: sets the save `Format` and whether it is a binary or not
+* `DefaultGameState`: a `GameState` class which is bundled with the library
+  * `flags`: an `unordered_map` of `string` to `variant<bool, int, string>` which can be used to store custom game state
+  * `gameEnd`: whether the game has ended or not
+  * `currentRoom`: the name of the current `Room`
 
 ## Build instructions
 
