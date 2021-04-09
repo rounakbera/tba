@@ -32,6 +32,9 @@
 *.out
 *.app
 main
+test_save_load
+
+# Program generated files
 output.txt
 savefile
 
@@ -43,3 +46,6 @@ compile_commands.json
 
 # Mac
 .DS_Store
+
+# Python
+.ipynb_checkpoints/

@@ -9,8 +9,8 @@ CXXFLAGS = -g -Wall $(INCLUDES) -std=c++20 -O2 -fmodules -fprebuilt-module-path=
 LDFLAGS = -g -L ../lib
 LDLIBS  = -ltba
 
-EXECUTABLE = main
-OBJECTS = main.o
+EXECUTABLE = test_save_load
+OBJECTS = test_save_load.o
 MODULE = ../lib/tba.pcm
 
 default: $(EXECUTABLE)

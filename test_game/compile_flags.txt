@@ -1,0 +1,4 @@
+-std=c++20
+-fmodules
+-fprebuilt-module-path=..
+-fmodule-file=../lib/tba.pcm

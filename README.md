@@ -391,6 +391,7 @@ The following is a simplified reference manual for using the TBA library. It exp
 Basic directory structure:
 * `lib/`: library source code
 * `tutorial_game/`: game using library
+* `test_game/`: testing and data collection/analysis using library
 
 The library and tutorial game are compiled separately.
 
