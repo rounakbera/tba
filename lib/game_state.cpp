@@ -151,29 +151,15 @@ void tba::DefaultGameState::writeVariant(std::ostream& out, std::variant<bool, i
     }
 }
 
-int tba::DefaultGameState::read_num(std::istream& infile)
-{
-    uint32_t num;
-    infile.read(reinterpret_cast<char *>(&num), sizeof(num));
-    return num;
-}
-
 bool tba::DefaultGameState::deserializeBinary(std::istream& infile)
 {
     flags.clear();
-    auto numPairs = read_num(infile);
+    auto numPairs = readNum(infile);
 
     for (int i=0; i < numPairs; i++)
     {
-        auto strLength = read_num(infile);
-        std::string key;
-        key.resize(strLength);
-        infile.read(&key[0], strLength);
-
-        strLength = read_num(infile);
-        std::string val;
-        val.resize(strLength);
-        infile.read(&val[0], strLength);
+        auto key = readNextString(infile);
+        auto val = readNextString(infile);
 
         switch (val.at(0))
         {
@@ -201,11 +187,7 @@ bool tba::DefaultGameState::deserializeBinary(std::istream& infile)
     }
 
     //read bool
-    auto strLength = read_num(infile);
-    std::string gamebool;
-    gamebool.resize(strLength);
-    infile.read(&gamebool[0], strLength);
-
+    auto gamebool = readNextString(infile);
     switch (gamebool.at(0))
     {
     case 't': {
@@ -220,22 +202,26 @@ bool tba::DefaultGameState::deserializeBinary(std::istream& infile)
     }
 
     //read currentRoom
-    strLength = read_num(infile);
-    std::string currRoom;
-    currRoom.resize(strLength);
-    infile.read(&currRoom[0], strLength);
-    currentRoom = currRoom;
+    currentRoom = readNextString(infile);
 
     return true;
 }
 
-int read_num(std::istream& infile)
+int tba::DefaultGameState::readNum(std::istream& infile)
 {
     uint32_t num;
     infile.read(reinterpret_cast<char *>(&num), sizeof(num));
     return num;
 }
 
+std::string tba::DefaultGameState::readNextString(std::istream& infile)
+{
+    auto strLength = readNum(infile);
+    std::string str;
+    str.resize(strLength);
+    infile.read(&str[0], strLength);
+    return str;
+}
 
 /*
 {
