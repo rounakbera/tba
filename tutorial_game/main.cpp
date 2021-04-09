@@ -188,7 +188,7 @@ bool JSONGameState::serialize(std::ostream& out, std::string format)
         else if (std::holds_alternative<std::string>(p.second)) 
         {
             auto stringVal = std::get<std::string>(p.second);
-            val = "'" + stringVal + "'";
+            val = stringVal;
         }
         value.SetString(val.c_str(), allocator);
         flag.AddMember(key, value, allocator);
