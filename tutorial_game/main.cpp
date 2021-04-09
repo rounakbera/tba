@@ -8,10 +8,17 @@ import <string>;
 import <sstream>;
 import <fstream>;
 import <variant>;
+import <typeinfo>;
 // clang modules are a bit buggy; may need to import some extra standard library modules
 
 #include "../rapidxml/rapidxml.hpp"
 #include "../rapidxml/rapidxml_print.hpp"
+#include "../rapidjson/rapidjson.h"
+#include "../rapidjson/document.h"
+#include "../rapidjson/allocators.h"
+#include "../rapidjson/ostreamwrapper.h"
+#include "../rapidjson/istreamwrapper.h"
+#include "../rapidjson/writer.h"
 
 class MyGameTalker {
 public:
@@ -133,15 +140,116 @@ bool XMLGameState::deserialize(std::istream& in, std::string format)
     return true;
 }
 
+class JSONGameState {
+public:
+    std::unordered_map<std::string, std::variant<bool, int, std::string>> flags;
+    bool gameEnd;
+    tba::RoomName currentRoom;
+
+    bool serialize(std::ostream& myOStream, std::string format);
+    bool deserialize(std::istream& myIStream, std::string format);
+};
+
+bool JSONGameState::serialize(std::ostream& out, std::string format)
+{
+    if (format != "json") {
+        return false;
+    }
+
+    rapidjson::Document d;
+    rapidjson::Document::AllocatorType& allocator = d.GetAllocator(); 
+    rapidjson::Value root(rapidjson::kObjectType); 
+    rapidjson::Value flag(rapidjson::kObjectType); 
+    rapidjson::Value key(rapidjson::kStringType); 
+    rapidjson::Value value(rapidjson::kStringType); 
+
+    std::string val;
+
+    for (auto const& p : flags) 
+    {
+        key.SetString(p.first.c_str(), allocator);
+        if (std::holds_alternative<bool>(p.second)) 
+        {
+            auto boolVal = std::get<bool>(p.second);
+            if (boolVal)
+            {
+                val = "true";
+            }
+            else
+            {
+                val = "false";
+            }
+        } 
+        else if (std::holds_alternative<int>(p.second)) 
+        {
+            auto intVal = std::get<int>(p.second);
+            val = std::to_string(intVal);
+        } 
+        else if (std::holds_alternative<std::string>(p.second)) 
+        {
+            auto stringVal = std::get<std::string>(p.second);
+            val = "'" + stringVal + "'";
+        }
+        value.SetString(val.c_str(), allocator);
+        flag.AddMember(key, value, allocator);
+    }
+    root.AddMember("flags", flag, allocator);
+    root.AddMember("gameEnd", gameEnd, allocator);
+    value.SetString(currentRoom.c_str(), allocator);
+    root.AddMember("currentRoom", value, allocator);
+
+    rapidjson::OStreamWrapper osw(out);
+    rapidjson::Writer<rapidjson::OStreamWrapper> writer(osw);
+
+    root.Accept(writer);
+
+    return true;
+}
+
+bool JSONGameState::deserialize(std::istream& in, std::string format)
+{
+    rapidjson::IStreamWrapper isw(in);
+    // rapidjson::Reader<rapidjson::IStreamWrapper> reader(isw);
+    rapidjson::Document d;
+    d.ParseStream(isw);
+    if (d.HasParseError())
+    {
+        return false;
+    }
+
+    flags.clear();
+    
+    for (rapidjson::Value::ConstMemberIterator it = d["flags"].MemberBegin(); it != d["flags"].MemberEnd(); ++it){
+        auto val = it;
+        if(val->value.IsBool())
+        {
+            flags[val->name.GetString()] = val->value.GetBool();
+        }
+        else if (val->value.IsInt())
+        {
+            flags[val->name.GetString()] = val->value.GetInt();
+        }
+        else if (val->value.IsString())
+        {
+            flags[val->name.GetString()] = val->value.GetString();
+        }
+    }
+
+    currentRoom = d["currentRoom"].GetString();
+    gameEnd = d["gameEnd"].GetBool();
+
+    return true;
+}
+
 using GameTalker = tba::DefaultGameTalker;
-using GameState = XMLGameState;
+using GameState = JSONGameState;
 
 int main()
 {
     std::ios_base::sync_with_stdio(false); // iostream optimization
 
     tba::GameRunner<GameTalker, GameState> gameRunner {};
-    gameRunner.setSaveState("xml", false);
+    gameRunner.setSaveState("json", false);
     gameRunner.state.flags.insert(std::make_pair("testInt", 12));
     gameRunner.state.flags.insert(std::make_pair("testBool", true));
     gameRunner.state.flags.insert(std::make_pair("testString", "testing"));
