@@ -7,8 +7,11 @@ import <unordered_map>;
 import <string>;
 import <sstream>;
 import <fstream>;
-// clang modules are a bit buggy; may need to import some extra standard library modules
 import <variant>;
+// clang modules are a bit buggy; may need to import some extra standard library modules
+
+#include "../rapidxml/rapidxml.hpp"
+#include "../rapidxml/rapidxml_print.hpp"
 
 class MyGameTalker {
 public:
@@ -27,12 +30,118 @@ std::vector<std::string> MyGameTalker::getInput()
     return args;
 }
 
+class XMLGameState {
+public:
+    std::unordered_map<std::string, std::variant<bool, int, std::string>> flags;
+    bool gameEnd;
+    tba::RoomName currentRoom;
+
+    bool serialize(std::ostream& myOStream, std::string format);
+    bool deserialize(std::istream& myIStream, std::string format);
+};
+
+bool XMLGameState::serialize(std::ostream& out, std::string format)
+{
+    if (format != "xml") {
+        return false;
+    }
+    rapidxml::xml_document<> doc;
+    rapidxml::xml_node<>* flagsNode = doc.allocate_node(rapidxml::node_element, "flags");
+
+    for (auto const& p : flags) {
+        std::string val;
+        std::string type;
+
+        if (std::holds_alternative<bool>(p.second)) {
+            val = (std::get<bool>(p.second)) ? "true" : "false";
+            type = "bool";
+        } 
+        else if (std::holds_alternative<int>(p.second)) {
+            val = std::to_string(std::get<int>(p.second));
+            type = "int";
+        } 
+        else if (std::holds_alternative<std::string>(p.second)) {
+            val = std::get<std::string>(p.second);
+            type = "string";
+        }
+
+        rapidxml::xml_node<>* keyNode = doc.allocate_node(rapidxml::node_element, "key", doc.allocate_string(p.first.c_str()));
+        rapidxml::xml_node<>* valNode = doc.allocate_node(rapidxml::node_element, "val", doc.allocate_string(val.c_str()));
+        rapidxml::xml_attribute<> *typeAttr = doc.allocate_attribute("type", doc.allocate_string(type.c_str()));
+        valNode->append_attribute(typeAttr);
+
+        rapidxml::xml_node<>* flagNode = doc.allocate_node(rapidxml::node_element, "flag");
+        flagNode->append_node(keyNode);
+        flagNode->append_node(valNode);
+
+        flagsNode->append_node(flagNode);
+    }
+    doc.append_node(flagsNode);
+
+    std::string gameEndStr = (gameEnd) ? "true" : "false";
+
+    rapidxml::xml_node<>* gameEndNode = doc.allocate_node(rapidxml::node_element, "gameEnd", gameEndStr.c_str());
+    rapidxml::xml_node<>* currRoomNode = doc.allocate_node(rapidxml::node_element, "currentRoom", currentRoom.c_str());
+    doc.append_node(gameEndNode);
+    doc.append_node(currRoomNode);
+
+    out << doc;
+
+    return true;
+}
+
+bool XMLGameState::deserialize(std::istream& in, std::string format)
+{
+    if (format != "xml") {
+        return false;
+    }
+
+    std::stringstream buffer;
+    buffer << in.rdbuf();
+    std::string str = buffer.str();
+
+    rapidxml::xml_document<> doc;
+    doc.parse<0>(str.data());
+
+    flags.clear();
+    rapidxml::xml_node<>* flagsNode = doc.first_node("flags");
+    for (rapidxml::xml_node<> *flagNode = flagsNode->first_node(); flagNode; flagNode = flagNode->next_sibling()) {
+        std::string key = flagNode->first_node("key")->value();
+        rapidxml::xml_node<> *valNode = flagNode->first_node("val");
+        std::string val = valNode->value();
+        std::string type = valNode->first_attribute("type")->value();
+
+        if (type == "bool") {
+            if (val == "true") {
+                flags.insert(std::make_pair(key, true));
+            }
+            else {
+                flags.insert(std::make_pair(key, false));
+            }
+        }
+        else if (type == "int") {
+            flags.insert(std::make_pair(key, std::stoi(val)));
+        }
+        else if (type == "string") {
+            flags.insert(std::make_pair(key, val));
+        }
+    }
+    
+    currentRoom = doc.first_node("currentRoom")->value();
+    std::string gameEndStr = doc.first_node("gameEnd")->value();
+    gameEnd = (gameEndStr == "true");
+    return true;
+}
+
+using GameTalker = tba::DefaultGameTalker;
+using GameState = XMLGameState;
+
 int main()
 {
     std::ios_base::sync_with_stdio(false); // iostream optimization
 
-    tba::GameRunner<tba::DefaultGameTalker, tba::DefaultGameState> gameRunner {};
-    gameRunner.setSaveState("binary", true);
+    tba::GameRunner<GameTalker, GameState> gameRunner {};
+    gameRunner.setSaveState("xml", false);
     gameRunner.state.flags.insert(std::make_pair("testInt", 12));
     gameRunner.state.flags.insert(std::make_pair("testBool", true));
     gameRunner.state.flags.insert(std::make_pair("testString", "testing"));
@@ -42,24 +151,24 @@ int main()
     std::cout << "Game has quit\n";*/
     
     // test code for event/action/room
-    tba::Room<tba::DefaultGameState> mainHold {};
+    tba::Room<GameState> mainHold {};
     mainHold.setDescription("You are sitting in a passenger "
             "chair in a dingy space freighter. As you look out the viewport, "
             "you see the bright starlines of hyperspace flow around you.");
     
-    tba::EventFunc<tba::DefaultGameState> descriptionEvent = [](auto& r, auto& s) {
+    tba::EventFunc<GameState> descriptionEvent = [](auto& r, auto& s) {
         return std::make_pair(true, "You look around and see two other people. "
             "One appears to be a man, and the other appears to be a woman.");
     };
     mainHold.events.emplace("description2", tba::Event{descriptionEvent});
 
-    tba::ActionFunc<tba::DefaultGameState> talkAction =
+    tba::ActionFunc<GameState> talkAction =
         [](auto& room, auto& state, std::vector<std::string> args) {
             if (args.empty()) {
                 return std::make_pair(true, "Who do you want to greet?");
             }
             else if (args[0] == "man") {
-                tba::ActionFunc<tba::DefaultGameState> nodAction =
+                tba::ActionFunc<GameState> nodAction =
                     [](auto& room, auto& state, std::vector<std::string> args) {
                         room.actions.erase("nod");
                         return std::make_pair(true, "You nod. \"I knew it would happen eventually,\" he chuckles.");
@@ -81,12 +190,12 @@ int main()
     };
     mainHold.setTextAction("", "go", holdGoTexts);
 
-    tba::Room<tba::DefaultGameState> cockpit {};
+    tba::Room<GameState> cockpit {};
     cockpit.setDescription("You enter the cockpit. The pilot is leaning back at her chair.");
     cockpit.setTextAction("Who would you like to greet?", "greet",
         {{"pilot", "\"Heya,\" the pilot waves back at you. \"Have you checked the shields yet?\""}});
 
-    tba::Room<tba::DefaultGameState> engineRoom {};
+    tba::Room<GameState> engineRoom {};
     engineRoom.setDescription("The engine room is hot and filled with steam. "
         "You see the hyperdrive and the shields. "
         "A droid pokes his optical lens up at you.");
@@ -97,7 +206,7 @@ int main()
         {"shields", "You run a diagnostic on the shields. They are damaged."},
         {"hyperdrive", "You run a diagnostic on the hyperdrive. It is perfectly functional."}});
     
-    tba::Room<tba::DefaultGameState> cargoHold {};
+    tba::Room<GameState> cargoHold {};
     cargoHold.setDescription("You enter the cargo hold. "
         "It is currently empty, as you and your crew have just sold the remaining stock.");
 
