@@ -85,8 +85,6 @@ bool tba::DefaultGameState::deserializeSimple(std::istream& in)
         }
         }
 
-        std::cout << flagEntry << "\n";
-
     }
 
     std::getline(in, line);
@@ -106,7 +104,7 @@ currentRoom (strlen|str)
 */
 bool tba::DefaultGameState::serializeBinary(std::ostream& out)
 {
-    int num = flags.size();
+    uint32_t num = flags.size();
     out.write((char *) (&num), sizeof(num));
 
     for (auto const& p : flags) 
@@ -126,8 +124,8 @@ bool tba::DefaultGameState::serializeBinary(std::ostream& out)
 
 void tba::DefaultGameState::writeString(std::ostream& out, std::string str)
 {
-    size_t strSize = str.size();
-    out.write((char *) (&strSize), sizeof(strSize));
+    uint32_t strSize = (uint32_t) str.size();
+    out.write((char *) (&strSize), sizeof(uint32_t));
     out.write(str.c_str(), strSize);
 }
 
@@ -153,35 +151,77 @@ void tba::DefaultGameState::writeVariant(std::ostream& out, std::variant<bool, i
     }
 }
 
-bool tba::DefaultGameState::deserializeBinary(std::istream& in)
+bool tba::DefaultGameState::deserializeBinary(std::istream& infile)
 {
-    // flags.clear();
-    // std::string line;
-    // std::getline(in, line);
-    // for (int i=0; i<std::stoi(line); i++)
-    // {
-    //     std::string flagEntry;
-    //     std::getline(in, flagEntry);
+    flags.clear();
+    auto numPairs = readNum(infile);
 
-    //     std::string delimiter = " : ";
-    //     auto key = flagEntry.substr(0, flagEntry.find(delimiter));
-    //     flagEntry.erase(0, flagEntry.find(delimiter) + delimiter.length());
-    //     auto val = flagEntry.substr(0, flagEntry.find(delimiter));
+    for (int i=0; i < numPairs; i++)
+    {
+        auto key = readNextString(infile);
+        auto val = readNextString(infile);
 
-    //     std::cout << key << " : " << val << std::endl;
+        switch (val.at(0))
+        {
+        case '\'': {
+            auto valStr = val.substr(1, val.size() - 2);
+            flags.insert(std::make_pair(key, valStr));
+            break;
+        }
+        
+        case 't': {
+            flags.insert(std::make_pair(key, true));
+            break;
+        }
 
-    //     flags.insert(std::make_pair(key, val));
-    // }
+        case 'f': {
+            flags.insert(std::make_pair(key, false));
+            break;
+        }
 
-    // std::getline(in, line);
-    // gameEnd = stoi(line);
+        default: {
+            auto valInt = std::stoi(val);
+            flags.insert(std::make_pair(key, valInt));
+        }
+        }
+    }
 
-    // std::getline(in, line);
-    // currentRoom = line;
+    //read bool
+    auto gamebool = readNextString(infile);
+    switch (gamebool.at(0))
+    {
+    case 't': {
+        gameEnd = true;
+        break;
+    }
+
+    case 'f': {
+        gameEnd = false;
+        break;
+    }
+    }
+
+    //read currentRoom
+    currentRoom = readNextString(infile);
 
     return true;
 }
 
+int tba::DefaultGameState::readNum(std::istream& infile)
+{
+    uint32_t num;
+    infile.read(reinterpret_cast<char *>(&num), sizeof(num));
+    return num;
+}
+
+std::string tba::DefaultGameState::readNextString(std::istream& infile)
+{
+    auto strLength = readNum(infile);
+    std::string str;
+    str.resize(strLength);
+    infile.read(&str[0], strLength);
+    return str;
+}
 
 /*
 {

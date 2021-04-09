@@ -149,6 +149,8 @@ export namespace tba {
     private:
         void writeString(std::ostream&, std::string);
         void writeVariant(std::ostream&, std::variant<bool, int, std::string>);
+        int readNum(std::istream& infile);
+        std::string readNextString(std::istream& infile);
     };
 
     // Implementation begins here:
